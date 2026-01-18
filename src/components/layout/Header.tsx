@@ -3,21 +3,24 @@ import { Button } from "@/components/ui/button";
 import { FileText, Briefcase, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
 const Header = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const navLinks = [
-    { path: "/", label: "Home", icon: null },
-    { path: "/builder", label: "Resume Builder", icon: FileText },
-    { path: "/jobs", label: "Job Recommendations", icon: Briefcase },
-  ];
-
+  const navLinks = [{
+    path: "/",
+    label: "Home",
+    icon: null
+  }, {
+    path: "/builder",
+    label: "Resume Builder",
+    icon: FileText
+  }, {
+    path: "/jobs",
+    label: "Job Recommendations",
+    icon: Briefcase
+  }];
   const isActive = (path: string) => location.pathname === path;
-
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass">
+  return <header className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -26,24 +29,18 @@ const Header = () => {
               <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-display text-xl font-bold text-foreground">
-              ResumeAI
+              ​Ai- Resume Buildwe  
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link key={link.path} to={link.path}>
-                <Button
-                  variant={isActive(link.path) ? "default" : "ghost"}
-                  size="sm"
-                  className="gap-2"
-                >
+            {navLinks.map(link => <Link key={link.path} to={link.path}>
+                <Button variant={isActive(link.path) ? "default" : "ghost"} size="sm" className="gap-2">
                   {link.icon && <link.icon className="w-4 h-4" />}
                   {link.label}
                 </Button>
-              </Link>
-            ))}
+              </Link>)}
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -62,44 +59,31 @@ const Header = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors">
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Menu */}
       <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass border-t border-border"
-          >
+        {mobileMenuOpen && <motion.div initial={{
+        opacity: 0,
+        height: 0
+      }} animate={{
+        opacity: 1,
+        height: "auto"
+      }} exit={{
+        opacity: 0,
+        height: 0
+      }} className="md:hidden glass border-t border-border">
             <div className="container mx-auto px-4 py-4 flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Button
-                    variant={isActive(link.path) ? "default" : "ghost"}
-                    className="w-full justify-start gap-2"
-                  >
+              {navLinks.map(link => <Link key={link.path} to={link.path} onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant={isActive(link.path) ? "default" : "ghost"} className="w-full justify-start gap-2">
                     {link.icon && <link.icon className="w-4 h-4" />}
                     {link.label}
                   </Button>
-                </Link>
-              ))}
+                </Link>)}
               <div className="border-t border-border my-2" />
               <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="hero" className="w-full">
@@ -107,11 +91,8 @@ const Header = () => {
                 </Button>
               </Link>
             </div>
-          </motion.div>
-        )}
+          </motion.div>}
       </AnimatePresence>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
