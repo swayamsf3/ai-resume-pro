@@ -4,32 +4,27 @@ export interface Template {
   id: TemplateId;
   name: string;
   description: string;
-  preview: string; // Color theme indicator
 }
 
 export const templates: Template[] = [
   {
     id: "classic",
     name: "Classic",
-    description: "Traditional layout with a clean, timeless design",
-    preview: "blue",
+    description: "Traditional ATS-friendly layout with clear sections",
   },
   {
     id: "modern",
     name: "Modern",
-    description: "Bold colors with a contemporary sidebar layout",
-    preview: "purple",
+    description: "Clean design with bold headings, fully ATS compatible",
   },
   {
     id: "minimal",
     name: "Minimal",
-    description: "Clean and simple with focus on content",
-    preview: "gray",
+    description: "Simple centered layout, perfect for ATS parsing",
   },
   {
     id: "professional",
     name: "Professional",
-    description: "Elegant design with accent colors",
-    preview: "emerald",
+    description: "Structured two-column format, optimized for ATS",
   },
 ];
