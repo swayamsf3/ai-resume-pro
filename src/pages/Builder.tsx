@@ -2,7 +2,9 @@ import { useState } from "react";
 import Header from "@/components/layout/Header";
 import ResumeForm from "@/components/builder/ResumeForm";
 import ResumePreview from "@/components/builder/ResumePreview";
+import TemplateSelector from "@/components/builder/TemplateSelector";
 import { motion } from "framer-motion";
+import type { TemplateId } from "@/components/builder/templates/types";
 
 export interface ResumeData {
   personalInfo: {
@@ -60,6 +62,23 @@ const initialResumeData: ResumeData = {
 
 const Builder = () => {
   const [resumeData, setResumeData] = useState<ResumeData>(initialResumeData);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId | null>(null);
+
+  const handleSelectTemplate = (templateId: TemplateId) => {
+    setSelectedTemplate(templateId);
+  };
+
+  // Show template selector if no template is selected
+  if (!selectedTemplate) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-20">
+          <TemplateSelector onSelectTemplate={handleSelectTemplate} />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,7 +104,12 @@ const Builder = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <ResumeForm resumeData={resumeData} setResumeData={setResumeData} />
+              <ResumeForm 
+                resumeData={resumeData} 
+                setResumeData={setResumeData}
+                selectedTemplate={selectedTemplate}
+                onChangeTemplate={() => setSelectedTemplate(null)}
+              />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -93,7 +117,10 @@ const Builder = () => {
               transition={{ delay: 0.2 }}
               className="lg:sticky lg:top-24"
             >
-              <ResumePreview resumeData={resumeData} />
+              <ResumePreview 
+                resumeData={resumeData} 
+                templateId={selectedTemplate} 
+              />
             </motion.div>
           </div>
         </div>
