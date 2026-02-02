@@ -27,6 +27,7 @@ interface ResumeFormProps {
 const ResumeForm = ({ resumeData, setResumeData }: ResumeFormProps) => {
   const [newSkill, setNewSkill] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
 
   const updatePersonalInfo = (field: keyof ResumeData["personalInfo"], value: string) => {
     setResumeData((prev) => ({
@@ -159,6 +160,21 @@ const ResumeForm = ({ resumeData, setResumeData }: ResumeFormProps) => {
       const mockSummary = `Results-driven ${resumeData.personalInfo.fullName || "professional"} with expertise in ${resumeData.skills.slice(0, 3).join(", ") || "various technologies"}. Proven track record of delivering high-quality solutions and driving innovation. Passionate about leveraging technology to solve complex problems and create impactful user experiences.`;
       updatePersonalInfo("summary", mockSummary);
       setIsGeneratingSummary(false);
+    }, 1500);
+  };
+
+  const generateProjectDescription = async (projectId: string) => {
+    const project = resumeData.projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    setGeneratingProjectId(projectId);
+    // Simulating AI response - will be replaced with actual AI call when Cloud is enabled
+    setTimeout(() => {
+      const techs = project.technologies || "modern technologies";
+      const name = project.name || "this project";
+      const mockDescription = `Developed ${name} using ${techs}. Implemented key features including user authentication, responsive UI design, and efficient data management. Collaborated with team members to deliver a scalable solution that improved user engagement and streamlined workflows.`;
+      updateProject(projectId, "description", mockDescription);
+      setGeneratingProjectId(null);
     }, 1500);
   };
 
@@ -501,7 +517,19 @@ const ResumeForm = ({ resumeData, setResumeData }: ResumeFormProps) => {
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
-                      <Label>Description</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Description</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => generateProjectDescription(proj.id)}
+                          disabled={generatingProjectId === proj.id}
+                          className="gap-1 text-primary"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                          {generatingProjectId === proj.id ? "Generating..." : "AI Generate"}
+                        </Button>
+                      </div>
                       <Textarea
                         placeholder="Describe what the project does and your contributions..."
                         value={proj.description}
