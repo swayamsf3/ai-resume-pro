@@ -29,7 +29,7 @@ const Header = () => {
               <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-display text-xl font-bold text-foreground">
-              ​Ai- Resume Buildwe  
+              ​Ai- Resume Builder  
             </span>
           </Link>
 
