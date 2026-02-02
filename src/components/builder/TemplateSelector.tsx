@@ -1,19 +1,13 @@
 import { motion } from "framer-motion";
-import { Check, FileText } from "lucide-react";
+import { Check, FileText, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { templates, type TemplateId } from "./templates/types";
 
 interface TemplateSelectorProps {
   onSelectTemplate: (templateId: TemplateId) => void;
 }
-
-const templateColors: Record<string, string> = {
-  blue: "from-blue-500 to-blue-700",
-  purple: "from-purple-500 to-purple-700",
-  gray: "from-gray-400 to-gray-600",
-  emerald: "from-emerald-500 to-teal-600",
-};
 
 const TemplateSelector = ({ onSelectTemplate }: TemplateSelectorProps) => {
   return (
@@ -24,11 +18,15 @@ const TemplateSelector = ({ onSelectTemplate }: TemplateSelectorProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
+          <Badge variant="secondary" className="mb-4 gap-1">
+            <ShieldCheck className="w-3 h-3" />
+            All templates are ATS-friendly
+          </Badge>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
             Choose Your Template
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Select a template that best represents your professional style. You can always change it later.
+            All templates use clean, simple formatting optimized for Applicant Tracking Systems.
           </p>
         </motion.div>
 
@@ -45,49 +43,51 @@ const TemplateSelector = ({ onSelectTemplate }: TemplateSelectorProps) => {
                 onClick={() => onSelectTemplate(template.id)}
               >
                 <CardContent className="p-0">
-                  {/* Template Preview */}
-                  <div className={`h-48 bg-gradient-to-br ${templateColors[template.preview]} relative overflow-hidden`}>
-                    {/* Mock resume layout */}
+                  {/* Template Preview - Black & White */}
+                  <div className="h-48 bg-gray-100 relative overflow-hidden">
                     <div className="absolute inset-4 bg-white rounded shadow-lg p-3 transform group-hover:scale-105 transition-transform duration-300">
                       {template.id === "modern" ? (
-                        <div className="flex h-full">
-                          <div className="w-1/3 bg-purple-700 rounded-l"></div>
-                          <div className="w-2/3 p-2 space-y-1.5">
-                            <div className="h-2 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-1.5 bg-gray-100 rounded w-1/2"></div>
-                            <div className="h-1 bg-gray-100 rounded w-full mt-2"></div>
-                            <div className="h-1 bg-gray-100 rounded w-5/6"></div>
-                          </div>
+                        <div className="h-full space-y-2">
+                          <div className="h-2.5 bg-gray-800 rounded w-2/3"></div>
+                          <div className="h-1 bg-gray-300 rounded w-full"></div>
+                          <div className="border-b-2 border-black mt-1 mb-2"></div>
+                          <div className="h-1.5 bg-gray-200 rounded w-1/3"></div>
+                          <div className="h-1 bg-gray-100 rounded w-full"></div>
+                          <div className="h-1 bg-gray-100 rounded w-5/6"></div>
                         </div>
                       ) : template.id === "professional" ? (
-                        <div className="h-full">
-                          <div className="h-8 bg-emerald-600 -m-3 mb-2 rounded-t"></div>
-                          <div className="grid grid-cols-3 gap-2 pt-2">
-                            <div className="col-span-2 space-y-1.5">
-                              <div className="h-1.5 bg-gray-200 rounded w-3/4"></div>
-                              <div className="h-1 bg-gray-100 rounded w-full"></div>
-                              <div className="h-1 bg-gray-100 rounded w-5/6"></div>
+                        <div className="h-full space-y-2">
+                          <div className="h-2.5 bg-gray-800 rounded w-1/2"></div>
+                          <div className="h-1 bg-gray-300 rounded w-2/3"></div>
+                          <div className="border-b-2 border-black mt-1 mb-2"></div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <div className="h-1 bg-gray-200 rounded"></div>
+                              <div className="h-1 bg-gray-100 rounded"></div>
                             </div>
                             <div className="space-y-1">
-                              <div className="h-1 bg-emerald-100 rounded"></div>
-                              <div className="h-1 bg-emerald-100 rounded"></div>
+                              <div className="h-1 bg-gray-200 rounded"></div>
+                              <div className="h-1 bg-gray-100 rounded"></div>
                             </div>
                           </div>
                         </div>
                       ) : template.id === "minimal" ? (
                         <div className="h-full flex flex-col items-center pt-2 space-y-2">
-                          <div className="h-2 bg-gray-300 rounded w-1/2"></div>
-                          <div className="h-1 bg-gray-100 rounded w-2/3"></div>
-                          <div className="h-1 bg-gray-100 rounded w-1/2 mt-2"></div>
+                          <div className="h-2.5 bg-gray-800 rounded w-1/2"></div>
+                          <div className="h-1 bg-gray-300 rounded w-2/3"></div>
+                          <div className="w-full border-b border-gray-300 mt-1"></div>
+                          <div className="h-1.5 bg-gray-200 rounded w-1/3"></div>
+                          <div className="h-1 bg-gray-100 rounded w-4/5"></div>
                           <div className="h-1 bg-gray-100 rounded w-3/5"></div>
                         </div>
                       ) : (
                         <div className="h-full space-y-2">
-                          <div className="h-2 bg-blue-600 rounded w-1/2"></div>
-                          <div className="border-b-2 border-blue-300 pb-1">
-                            <div className="h-1 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-2.5 bg-gray-800 rounded w-1/2"></div>
+                          <div className="border-b-2 border-black pb-1">
+                            <div className="h-1 bg-gray-300 rounded w-3/4"></div>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
+                            <div className="h-1.5 bg-gray-200 rounded w-1/3"></div>
                             <div className="h-1 bg-gray-100 rounded w-full"></div>
                             <div className="h-1 bg-gray-100 rounded w-5/6"></div>
                           </div>
