@@ -15,16 +15,22 @@ import {
   Plus, 
   Trash2, 
   Wand2,
-  X 
+  X,
+  Palette
 } from "lucide-react";
 import type { ResumeData } from "@/pages/Builder";
+import type { TemplateId } from "./templates/types";
+import { templates } from "./templates/types";
 
 interface ResumeFormProps {
   resumeData: ResumeData;
   setResumeData: React.Dispatch<React.SetStateAction<ResumeData>>;
+  selectedTemplate: TemplateId;
+  onChangeTemplate: () => void;
 }
 
-const ResumeForm = ({ resumeData, setResumeData }: ResumeFormProps) => {
+const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTemplate }: ResumeFormProps) => {
+  const currentTemplate = templates.find(t => t.id === selectedTemplate);
   const [newSkill, setNewSkill] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
@@ -181,7 +187,18 @@ const ResumeForm = ({ resumeData, setResumeData }: ResumeFormProps) => {
   return (
     <Card className="border-border shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle className="font-display text-xl">Resume Details</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-display text-xl">Resume Details</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onChangeTemplate}
+            className="gap-2"
+          >
+            <Palette className="w-4 h-4" />
+            {currentTemplate?.name || "Change Template"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="personal" className="w-full">
