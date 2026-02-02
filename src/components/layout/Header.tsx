@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Briefcase, User, Menu, X } from "lucide-react";
+import { FileText, Briefcase, User, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 const Header = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navLinks = [{
     path: "/",
@@ -45,17 +47,26 @@ const Header = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-2">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <User className="w-4 h-4" />
-                Dashboard
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button variant="hero" size="sm">
-                Get Started
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" className="gap-2" onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button variant="hero" size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -85,11 +96,30 @@ const Header = () => {
                   </Button>
                 </Link>)}
               <div className="border-t border-border my-2" />
-              <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="hero" className="w-full">
-                  Get Started
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start gap-2">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2" 
+                    onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="hero" className="w-full">
+                    Get Started
+                  </Button>
+                </Link>
+              )}
             </div>
           </motion.div>}
       </AnimatePresence>
