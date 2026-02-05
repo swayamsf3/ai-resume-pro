@@ -16,7 +16,8 @@ import {
   Trash2, 
   Wand2,
   X,
-  Palette
+  Palette,
+  Award
 } from "lucide-react";
 import type { ResumeData } from "@/pages/Builder";
 import type { TemplateId } from "./templates/types";
@@ -159,6 +160,37 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
     }));
   };
 
+  const addCertification = () => {
+    setResumeData((prev) => ({
+      ...prev,
+      certifications: [
+        ...prev.certifications,
+        {
+          id: crypto.randomUUID(),
+          name: "",
+          issuer: "",
+          date: "",
+        },
+      ],
+    }));
+  };
+
+  const updateCertification = (id: string, field: string, value: string) => {
+    setResumeData((prev) => ({
+      ...prev,
+      certifications: prev.certifications.map((cert) =>
+        cert.id === id ? { ...cert, [field]: value } : cert
+      ),
+    }));
+  };
+
+  const removeCertification = (id: string) => {
+    setResumeData((prev) => ({
+      ...prev,
+      certifications: prev.certifications.filter((cert) => cert.id !== id),
+    }));
+  };
+
   const generateAISummary = async () => {
     setIsGeneratingSummary(true);
     // Simulating AI response - will be replaced with actual AI call when Cloud is enabled
@@ -202,7 +234,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid grid-cols-5 mb-6">
+          <TabsList className="grid grid-cols-6 mb-6">
             <TabsTrigger value="personal" className="gap-1 text-xs sm:text-sm">
               <User className="w-4 h-4" />
               <span className="hidden sm:inline">Personal</span>
@@ -222,6 +254,10 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
             <TabsTrigger value="projects" className="gap-1 text-xs sm:text-sm">
               <FolderGit2 className="w-4 h-4" />
               <span className="hidden sm:inline">Projects</span>
+            </TabsTrigger>
+            <TabsTrigger value="certifications" className="gap-1 text-xs sm:text-sm">
+              <Award className="w-4 h-4" />
+              <span className="hidden sm:inline">Certs</span>
             </TabsTrigger>
           </TabsList>
 
@@ -561,6 +597,59 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
             <Button onClick={addProject} variant="outline" className="w-full gap-2">
               <Plus className="w-4 h-4" />
               Add Project
+            </Button>
+          </TabsContent>
+
+          {/* Certifications */}
+          <TabsContent value="certifications" className="space-y-4">
+            {resumeData.certifications.map((cert, index) => (
+              <Card key={cert.id} className="bg-muted/30 border-border">
+                <CardContent className="pt-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Certification {index + 1}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeCertification(cert.id)}
+                      className="h-8 w-8 text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Certification Name</Label>
+                      <Input
+                        placeholder="AWS Solutions Architect"
+                        value={cert.name}
+                        onChange={(e) => updateCertification(cert.id, "name", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Issuing Organization</Label>
+                      <Input
+                        placeholder="Amazon Web Services"
+                        value={cert.issuer}
+                        onChange={(e) => updateCertification(cert.id, "issuer", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date Obtained</Label>
+                      <Input
+                        type="month"
+                        value={cert.date}
+                        onChange={(e) => updateCertification(cert.id, "date", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            <Button onClick={addCertification} variant="outline" className="w-full gap-2">
+              <Plus className="w-4 h-4" />
+              Add Certification
             </Button>
           </TabsContent>
         </Tabs>

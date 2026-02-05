@@ -6,7 +6,7 @@ interface TemplateProps {
 }
 
 const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, projects } = resumeData;
+  const { personalInfo, experience, education, skills, projects, certifications } = resumeData;
 
   const getBulletPoints = (description: string) => {
     if (!description) return [];
@@ -98,6 +98,18 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           </h2>
           <p className="text-[10px] text-center leading-snug">
             {skills.join(" | ")}
+          </p>
+        </section>
+      )}
+
+      {/* Certifications */}
+      {certifications && certifications.length > 0 && (
+        <section>
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
+            Certifications
+          </h2>
+          <p className="text-[10px] text-center leading-snug">
+            {certifications.map((cert) => `${cert.name}${cert.issuer ? ` (${cert.issuer})` : ""}`).join(" | ")}
           </p>
         </section>
       )}
