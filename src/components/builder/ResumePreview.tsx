@@ -44,35 +44,91 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
     try {
       const element = resumeRef.current;
 
-      // Render the resume element to a canvas
-      const canvas = await html2canvas(element, {
-        scale: 2, // Higher scale for better quality
+      // Create a temporary container for full-height rendering
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '210mm';
+      tempContainer.style.background = 'white';
+      
+      // Clone the resume content and remove height constraints
+      const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.maxHeight = 'none';
+      clone.style.overflow = 'visible';
+      clone.style.height = 'auto';
+      clone.style.aspectRatio = 'unset';
+      
+      tempContainer.appendChild(clone);
+      document.body.appendChild(tempContainer);
+
+      // Wait for fonts and images to load
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Render the cloned element to a canvas with higher scale for crisp text
+      const canvas = await html2canvas(clone, {
+        scale: 3, // Increased from 2 for sharper text
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        width: clone.scrollWidth,
+        height: clone.scrollHeight,
       });
 
+      // Cleanup temporary container
+      document.body.removeChild(tempContainer);
+
       // A4 dimensions in mm
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
       const pdf = new jsPDF("p", "mm", "a4");
-      const imgData = canvas.toDataURL("image/png");
+      
+      // Calculate how many pages we need
+      const pageHeightInCanvasPixels = (canvas.width * pdfHeight) / pdfWidth;
+      const totalPages = Math.ceil(canvas.height / pageHeightInCanvasPixels);
 
-      let position = 0;
-      let heightLeft = imgHeight;
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
 
-      // Add first page
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+        // Calculate the portion of canvas for this page
+        const sourceY = page * pageHeightInCanvasPixels;
+        const sourceHeight = Math.min(
+          pageHeightInCanvasPixels,
+          canvas.height - sourceY
+        );
 
-      // Add additional pages if content overflows
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        // Create a temporary canvas for this page slice
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,
+            0, 0, canvas.width, sourceHeight
+          );
+        }
+
+        // Calculate the height for this page in mm
+        const pageHeightMm = (sourceHeight / canvas.width) * pdfWidth;
+
+        pdf.addImage(
+          pageCanvas.toDataURL('image/png'),
+          'PNG',
+          0,
+          0,
+          pdfWidth,
+          pageHeightMm
+        );
       }
 
       // Generate filename from user's name or default
