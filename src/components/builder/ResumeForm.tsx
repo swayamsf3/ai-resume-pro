@@ -22,6 +22,9 @@ import {
 import type { ResumeData } from "@/pages/Builder";
 import type { TemplateId } from "./templates/types";
 import { templates } from "./templates/types";
+import { toast } from "@/hooks/use-toast";
+
+const SUPABASE_URL = "https://qswjxgjfynphxvobaitl.supabase.co";
 
 interface ResumeFormProps {
   resumeData: ResumeData;
@@ -193,12 +196,47 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
   const generateAISummary = async () => {
     setIsGeneratingSummary(true);
-    // Simulating AI response - will be replaced with actual AI call when Cloud is enabled
-    setTimeout(() => {
-      const mockSummary = `Results-driven ${resumeData.personalInfo.fullName || "professional"} with expertise in ${resumeData.skills.slice(0, 3).join(", ") || "various technologies"}. Proven track record of delivering high-quality solutions and driving innovation. Passionate about leveraging technology to solve complex problems and create impactful user experiences.`;
-      updatePersonalInfo("summary", mockSummary);
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/generate-resume-content`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "summary",
+            data: {
+              fullName: resumeData.personalInfo.fullName,
+              skills: resumeData.skills,
+              experience: resumeData.experience.map(e => ({
+                position: e.position,
+                company: e.company
+              }))
+            }
+          })
+        }
+      );
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate summary");
+      }
+
+      updatePersonalInfo("summary", result.content);
+      toast({
+        title: "Summary Generated!",
+        description: "Your professional summary has been created.",
+      });
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsGeneratingSummary(false);
-    }, 1500);
+    }
   };
 
   const generateProjectDescription = async (projectId: string) => {
@@ -206,14 +244,43 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
     if (!project) return;
 
     setGeneratingProjectId(projectId);
-    // Simulating AI response - will be replaced with actual AI call when Cloud is enabled
-    setTimeout(() => {
-      const techs = project.technologies || "modern technologies";
-      const name = project.name || "this project";
-      const mockDescription = `Developed ${name} using ${techs}. Implemented key features including user authentication, responsive UI design, and efficient data management. Collaborated with team members to deliver a scalable solution that improved user engagement and streamlined workflows.`;
-      updateProject(projectId, "description", mockDescription);
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/generate-resume-content`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "project",
+            data: {
+              name: project.name,
+              technologies: project.technologies
+            }
+          })
+        }
+      );
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate description");
+      }
+
+      updateProject(projectId, "description", result.content);
+      toast({
+        title: "Description Generated!",
+        description: "Your project description has been created.",
+      });
+    } catch (error) {
+      console.error("Error generating project description:", error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setGeneratingProjectId(null);
-    }, 1500);
+    }
   };
 
   return (
