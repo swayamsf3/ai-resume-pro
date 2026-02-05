@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Briefcase, User, Menu, X, LogOut } from "lucide-react";
+import { FileText, Briefcase, User, Menu, X, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,6 +55,12 @@ const Header = () => {
                     Dashboard
                   </Button>
                 </Link>
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Settings className="w-4 h-4" />
+                    Profile
+                  </Button>
+                </Link>
                 <Button variant="outline" size="sm" className="gap-2" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
                   Logout
@@ -102,6 +108,12 @@ const Header = () => {
                     <Button variant="ghost" className="w-full justify-start gap-2">
                       <User className="w-4 h-4" />
                       Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start gap-2">
+                      <Settings className="w-4 h-4" />
+                      Profile
                     </Button>
                   </Link>
                   <Button 
