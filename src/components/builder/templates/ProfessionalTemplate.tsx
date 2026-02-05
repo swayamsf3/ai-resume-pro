@@ -32,7 +32,7 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Summary */}
       {personalInfo.summary && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase mb-1">
             Professional Summary
           </h2>
@@ -44,13 +44,13 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Experience */}
       {experience.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="text-[10px] font-bold uppercase mb-1">
             Work Experience
           </h2>
           <div className="space-y-1.5">
             {experience.map((exp) => (
-              <div key={exp.id}>
+              <div key={exp.id} className="resume-item">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-xs">{exp.position}</h3>
@@ -78,13 +78,13 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Projects */}
       {projects.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="text-[10px] font-bold uppercase mb-1">
             Projects
           </h2>
           <div className="space-y-1 mt-1">
             {projects.map((proj) => (
-              <div key={proj.id}>
+              <div key={proj.id} className="resume-item">
                 <h3 className="font-bold text-xs">
                   {proj.name}
                   {proj.link && (
@@ -115,16 +115,16 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       )}
 
       {/* Two Column Section */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 resume-section">
         {/* Education */}
         {education.length > 0 && (
-          <section>
+          <section className="resume-section">
             <h2 className="text-[10px] font-bold uppercase mb-1">
               Education
             </h2>
             <div className="space-y-0.5">
               {education.map((edu) => (
-                <div key={edu.id} className="text-[10px]">
+                <div key={edu.id} className="resume-item text-[10px]">
                   <p className="font-bold">{edu.degree}{edu.field && ` — ${edu.field}`}</p>
                   <p className="text-gray-700">
                     {edu.institution} | {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
@@ -138,7 +138,7 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
         {/* Skills */}
         {skills.length > 0 && (
-          <section>
+          <section className="resume-section">
             <h2 className="text-[10px] font-bold uppercase mb-1">
               Skills
             </h2>
@@ -151,7 +151,7 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Certifications */}
       {certifications && certifications.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase mb-1">
             Certifications
           </h2>

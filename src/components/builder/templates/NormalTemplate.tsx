@@ -27,7 +27,7 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Summary */}
       {personalInfo.summary && (
-        <section>
+        <section className="resume-section">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Professional Summary
           </h2>
@@ -39,13 +39,13 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Education */}
       {education.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Education
           </h2>
           <div className="space-y-0.5">
             {education.map((edu) => (
-              <div key={edu.id} className="text-[10px]">
+              <div key={edu.id} className="resume-item text-[10px]">
                 <p className="font-semibold">
                   {edu.degree}{edu.field && ` – ${edu.field}`}
                   {edu.startDate && ` (${formatDate(edu.startDate)}–${formatDate(edu.endDate)})`}
@@ -62,7 +62,7 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Skills */}
       {skills.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Skills
           </h2>
@@ -79,13 +79,13 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Experience */}
       {experience.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Experience
           </h2>
           <div className="space-y-1.5">
             {experience.map((exp) => (
-              <div key={exp.id}>
+              <div key={exp.id} className="resume-item">
                 <div className="flex justify-between items-baseline">
                   <h3 className="font-semibold text-[10px]">{exp.position}</h3>
                   <span className="text-[9px] text-gray-600 whitespace-nowrap">
@@ -111,13 +111,13 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Projects */}
       {projects.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Projects
           </h2>
           <div className="space-y-1.5">
             {projects.map((proj) => (
-              <div key={proj.id}>
+              <div key={proj.id} className="resume-item">
                 <h3 className="font-semibold text-[10px]">
                   {proj.name}
                   {proj.technologies && (
@@ -145,13 +145,13 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Certifications */}
       {certifications && certifications.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Certifications
           </h2>
           <ul className="text-[10px] leading-snug list-none space-y-0.5">
             {certifications.map((cert) => (
-              <li key={cert.id} className="flex gap-1">
+              <li key={cert.id} className="resume-item flex gap-1">
                 <span>•</span>
                 <span>
                   {cert.name}

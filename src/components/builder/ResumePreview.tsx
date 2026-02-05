@@ -22,6 +22,8 @@ interface ResumePreviewProps {
 // A4 dimensions for preview (scaled for screen display)
 const PAGE_WIDTH_PX = 595; // A4 width at 72 DPI
 const PAGE_HEIGHT_PX = 842; // A4 height at 72 DPI (297/210 * 595)
+const CONTENT_PADDING = 20; // Padding inside each page
+const USABLE_PAGE_HEIGHT = PAGE_HEIGHT_PX - (CONTENT_PADDING * 2); // 802px usable content height
 
 const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
   const resumeRef = useRef<HTMLDivElement>(null);
@@ -40,7 +42,7 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
   const measureContent = useCallback(() => {
     if (contentMeasureRef.current) {
       const contentHeight = contentMeasureRef.current.scrollHeight;
-      const pagesNeeded = Math.ceil(contentHeight / PAGE_HEIGHT_PX);
+      const pagesNeeded = Math.ceil(contentHeight / USABLE_PAGE_HEIGHT);
       setTotalPages(Math.max(1, pagesNeeded));
     }
   }, []);
@@ -238,8 +240,14 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       {/* Hidden content for measuring full height */}
       <div 
         ref={contentMeasureRef}
-        className="absolute left-[-9999px] p-5"
-        style={{ width: `${PAGE_WIDTH_PX}px`, background: '#fff', color: '#111' }}
+        className="absolute left-[-9999px]"
+        style={{ 
+          width: `${PAGE_WIDTH_PX}px`, 
+          padding: `${CONTENT_PADDING}px`,
+          background: '#fff', 
+          color: '#111',
+          boxSizing: 'border-box'
+        }}
       >
         {hasContent && renderTemplate()}
       </div>
@@ -286,13 +294,14 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
                     
                     {/* Content positioned to show correct slice */}
                     <div
-                      className="p-5"
                       style={{
                         position: 'absolute',
-                        top: `-${pageIndex * (PAGE_HEIGHT_PX - 40)}px`,
+                        top: `-${pageIndex * USABLE_PAGE_HEIGHT}px`,
                         left: 0,
                         right: 0,
+                        padding: `${CONTENT_PADDING}px`,
                         color: '#111',
+                        boxSizing: 'border-box',
                       }}
                     >
                       {renderTemplate()}
