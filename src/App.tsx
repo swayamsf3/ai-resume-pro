@@ -27,7 +27,14 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/builder" element={<Builder />} />
+            <Route
+              path="/builder"
+              element={
+                <ProtectedRoute>
+                  <Builder />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/jobs"
               element={
