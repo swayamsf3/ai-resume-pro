@@ -42,6 +42,12 @@ export interface ResumeData {
     technologies: string;
     link: string;
   }>;
+  certifications: Array<{
+    id: string;
+    name: string;
+    issuer: string;
+    date: string;
+  }>;
 }
 
 const initialResumeData: ResumeData = {
@@ -58,6 +64,7 @@ const initialResumeData: ResumeData = {
   education: [],
   skills: [],
   projects: [],
+  certifications: [],
 };
 
 const Builder = () => {

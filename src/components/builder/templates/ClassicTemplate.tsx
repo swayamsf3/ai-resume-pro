@@ -6,7 +6,7 @@ interface TemplateProps {
 }
 
 const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, projects } = resumeData;
+  const { personalInfo, experience, education, skills, projects, certifications } = resumeData;
 
   // Helper to split description into bullet points
   const getBulletPoints = (description: string) => {
@@ -106,6 +106,18 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           </h2>
           <p className="text-[10px] leading-snug">
             {skills.join(" • ")}
+          </p>
+        </section>
+      )}
+
+      {/* Certifications */}
+      {certifications && certifications.length > 0 && (
+        <section>
+          <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
+            Certifications
+          </h2>
+          <p className="text-[10px] leading-snug">
+            {certifications.map((cert) => `${cert.name}${cert.issuer ? ` (${cert.issuer})` : ""}`).join(" • ")}
           </p>
         </section>
       )}
