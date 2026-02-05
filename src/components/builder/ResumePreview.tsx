@@ -145,8 +145,8 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
         <CardContent className="p-0">
           <div
             ref={resumeRef}
-            className="bg-white text-gray-900 p-8 min-h-[800px] print:min-h-0 overflow-hidden"
-            style={{ aspectRatio: "8.5/11" }}
+            className="bg-white text-gray-900 p-5 min-h-[700px] print:min-h-0 overflow-hidden"
+            style={{ aspectRatio: "210/297", maxHeight: "900px" }}
           >
             {!hasContent ? (
               <div className="h-full flex items-center justify-center text-gray-400">

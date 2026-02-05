@@ -9,41 +9,47 @@ interface TemplateProps {
 const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
   const { personalInfo, experience, education, skills, projects } = resumeData;
 
+  // Helper to split description into bullet points
+  const getBulletPoints = (description: string) => {
+    if (!description) return [];
+    return description.split(/[.•\n]/).filter(s => s.trim().length > 0).slice(0, 3);
+  };
+
   return (
-    <div className="space-y-5 text-black">
+    <div className="space-y-2 text-black">
       {/* Header / Personal Info */}
-      <header className="border-b-2 border-black pb-3">
-        <h1 className="text-2xl font-bold mb-2">
+      <header className="border-b-2 border-black pb-2">
+        <h1 className="text-xl font-bold mb-1">
           {personalInfo.fullName || "Your Name"}
         </h1>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+        <div className="flex flex-wrap gap-3 text-[10px] text-gray-700">
           {personalInfo.email && (
             <span className="flex items-center gap-1">
-              <Mail className="w-3 h-3" />
+              <Mail className="w-2.5 h-2.5" />
               {personalInfo.email}
             </span>
           )}
           {personalInfo.phone && (
             <span className="flex items-center gap-1">
-              <Phone className="w-3 h-3" />
+              <Phone className="w-2.5 h-2.5" />
               {personalInfo.phone}
             </span>
           )}
           {personalInfo.location && (
             <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
+              <MapPin className="w-2.5 h-2.5" />
               {personalInfo.location}
             </span>
           )}
           {personalInfo.linkedin && (
             <span className="flex items-center gap-1">
-              <Linkedin className="w-3 h-3" />
+              <Linkedin className="w-2.5 h-2.5" />
               {personalInfo.linkedin}
             </span>
           )}
           {personalInfo.portfolio && (
             <span className="flex items-center gap-1">
-              <Globe className="w-3 h-3" />
+              <Globe className="w-2.5 h-2.5" />
               {personalInfo.portfolio}
             </span>
           )}
@@ -53,10 +59,10 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Summary */}
       {personalInfo.summary && (
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-2 border-b border-gray-300 pb-1">
+          <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Professional Summary
           </h2>
-          <p className="text-sm leading-relaxed">
+          <p className="text-[11px] leading-snug">
             {personalInfo.summary}
           </p>
         </section>
@@ -65,25 +71,30 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Experience */}
       {experience.length > 0 && (
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-3 border-b border-gray-300 pb-1">
+          <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Experience
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-1.5">
             {experience.map((exp) => (
               <div key={exp.id}>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold">{exp.position}</h3>
-                    <p className="text-sm text-gray-700">{exp.company}</p>
+                    <h3 className="font-semibold text-xs">{exp.position}</h3>
+                    <p className="text-[10px] text-gray-700">{exp.company}</p>
                   </div>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-[10px] text-gray-600 whitespace-nowrap">
                     {formatDate(exp.startDate)} - {exp.current ? "Present" : formatDate(exp.endDate)}
                   </span>
                 </div>
                 {exp.description && (
-                  <p className="text-sm mt-1 leading-relaxed">
-                    {exp.description}
-                  </p>
+                  <ul className="text-[10px] mt-0.5 leading-snug list-none">
+                    {getBulletPoints(exp.description).map((point, i) => (
+                      <li key={i} className="flex gap-1">
+                        <span>•</span>
+                        <span>{point.trim()}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             ))}
@@ -94,23 +105,17 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Education */}
       {education.length > 0 && (
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-3 border-b border-gray-300 pb-1">
+          <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Education
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-0.5">
             {education.map((edu) => (
-              <div key={edu.id} className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold">
-                    {edu.degree} {edu.field && `in ${edu.field}`}
-                  </h3>
-                  <p className="text-sm text-gray-700">{edu.institution}</p>
-                  {edu.gpa && <p className="text-xs text-gray-600">GPA: {edu.gpa}</p>}
-                </div>
-                <span className="text-xs text-gray-600">
-                  {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
-                </span>
-              </div>
+              <p key={edu.id} className="text-[10px]">
+                <span className="font-semibold">{edu.degree}{edu.field && ` in ${edu.field}`}</span>
+                {" | "}{edu.institution}
+                {" | "}{formatDate(edu.startDate)} - {formatDate(edu.endDate)}
+                {edu.gpa && ` | GPA: ${edu.gpa}`}
+              </p>
             ))}
           </div>
         </section>
@@ -119,10 +124,10 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Skills */}
       {skills.length > 0 && (
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-2 border-b border-gray-300 pb-1">
+          <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Skills
           </h2>
-          <p className="text-sm">
+          <p className="text-[10px] leading-snug">
             {skills.join(" • ")}
           </p>
         </section>
@@ -131,25 +136,30 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Projects */}
       {projects.length > 0 && (
         <section>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-3 border-b border-gray-300 pb-1">
+          <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Projects
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {projects.map((proj) => (
               <div key={proj.id}>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold">{proj.name}</h3>
+                <div className="flex items-baseline gap-1 flex-wrap">
+                  <h3 className="font-semibold text-xs">{proj.name}</h3>
                   {proj.link && (
-                    <span className="text-xs text-gray-600">| {proj.link}</span>
+                    <span className="text-[9px] text-gray-600">| {proj.link}</span>
+                  )}
+                  {proj.technologies && (
+                    <span className="text-[9px] text-gray-600">| {proj.technologies}</span>
                   )}
                 </div>
-                {proj.technologies && (
-                  <p className="text-xs text-gray-600 mb-1">Technologies: {proj.technologies}</p>
-                )}
                 {proj.description && (
-                  <p className="text-sm leading-relaxed">
-                    {proj.description}
-                  </p>
+                  <ul className="text-[10px] leading-snug list-none">
+                    {getBulletPoints(proj.description).map((point, i) => (
+                      <li key={i} className="flex gap-1">
+                        <span>•</span>
+                        <span>{point.trim()}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             ))}
