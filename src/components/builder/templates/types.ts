@@ -1,4 +1,4 @@
-export type TemplateId = "classic" | "modern" | "minimal" | "professional";
+export type TemplateId = "classic" | "modern" | "minimal" | "professional" | "normal";
 
 export interface Template {
   id: TemplateId;
@@ -26,5 +26,10 @@ export const templates: Template[] = [
     id: "professional",
     name: "Professional",
     description: "Structured two-column format, optimized for ATS",
+  },
+  {
+    id: "normal",
+    name: "Normal",
+    description: "Standard fresher-style resume with skills as bullet list",
   },
 ];

@@ -8,6 +8,7 @@ import ClassicTemplate from "./templates/ClassicTemplate";
 import ModernTemplate from "./templates/ModernTemplate";
 import MinimalTemplate from "./templates/MinimalTemplate";
 import ProfessionalTemplate from "./templates/ProfessionalTemplate";
+import NormalTemplate from "./templates/NormalTemplate";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "@/hooks/use-toast";
@@ -115,6 +116,8 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
         return <MinimalTemplate {...templateProps} />;
       case "professional":
         return <ProfessionalTemplate {...templateProps} />;
+      case "normal":
+        return <NormalTemplate {...templateProps} />;
       case "classic":
       default:
         return <ClassicTemplate {...templateProps} />;
