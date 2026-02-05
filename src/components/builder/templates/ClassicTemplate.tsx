@@ -1,4 +1,3 @@
-import { Mail, Phone, MapPin, Globe, Linkedin } from "lucide-react";
 import type { ResumeData } from "@/pages/Builder";
 
 interface TemplateProps {
@@ -12,47 +11,25 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
   // Helper to split description into bullet points
   const getBulletPoints = (description: string) => {
     if (!description) return [];
-    return description.split(/[.•\n]/).filter(s => s.trim().length > 0).slice(0, 3);
+    return description.split(/[•\n]/).filter(s => s.trim().length > 0).slice(0, 5);
   };
 
   return (
     <div className="space-y-2 text-black">
       {/* Header / Personal Info */}
-      <header className="border-b-2 border-black pb-2">
-        <h1 className="text-xl font-bold mb-1">
-          {personalInfo.fullName || "Your Name"}
-        </h1>
-        <div className="flex flex-wrap gap-3 text-[10px] text-gray-700">
-          {personalInfo.email && (
-            <span className="flex items-center gap-1">
-              <Mail className="w-2.5 h-2.5" />
-              {personalInfo.email}
-            </span>
-          )}
-          {personalInfo.phone && (
-            <span className="flex items-center gap-1">
-              <Phone className="w-2.5 h-2.5" />
-              {personalInfo.phone}
-            </span>
-          )}
-          {personalInfo.location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="w-2.5 h-2.5" />
-              {personalInfo.location}
-            </span>
-          )}
-          {personalInfo.linkedin && (
-            <span className="flex items-center gap-1">
-              <Linkedin className="w-2.5 h-2.5" />
-              {personalInfo.linkedin}
-            </span>
-          )}
-          {personalInfo.portfolio && (
-            <span className="flex items-center gap-1">
-              <Globe className="w-2.5 h-2.5" />
-              {personalInfo.portfolio}
-            </span>
-          )}
+      <header className="border-b-2 border-black pb-1">
+        <div className="flex justify-between items-baseline">
+          <h1 className="text-xl font-bold">
+            {personalInfo.fullName || "Your Name"}
+          </h1>
+          <div className="text-[10px] text-gray-700">
+            {[personalInfo.phone, personalInfo.email].filter(Boolean).join(" | ")}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 text-[10px] text-gray-700">
+          {personalInfo.location && <span>{personalInfo.location}</span>}
+          {personalInfo.linkedin && <span>| {personalInfo.linkedin}</span>}
+          {personalInfo.portfolio && <span>| {personalInfo.portfolio}</span>}
         </div>
       </header>
 
@@ -87,7 +64,7 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
                   </span>
                 </div>
                 {exp.description && (
-                  <ul className="text-[10px] mt-0.5 leading-snug list-none">
+                  <ul className="text-[9px] mt-0.5 leading-snug list-none">
                     {getBulletPoints(exp.description).map((point, i) => (
                       <li key={i} className="flex gap-1">
                         <span>•</span>
@@ -139,7 +116,7 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Projects
           </h2>
-          <div className="space-y-1">
+          <div className="space-y-1 mt-1">
             {projects.map((proj) => (
               <div key={proj.id}>
                 <div className="flex items-baseline gap-1 flex-wrap">
@@ -152,7 +129,7 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
                   )}
                 </div>
                 {proj.description && (
-                  <ul className="text-[10px] leading-snug list-none">
+                  <ul className="text-[9px] leading-snug list-none">
                     {getBulletPoints(proj.description).map((point, i) => (
                       <li key={i} className="flex gap-1">
                         <span>•</span>

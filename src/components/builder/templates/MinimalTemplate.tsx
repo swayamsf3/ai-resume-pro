@@ -10,27 +10,23 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
   const getBulletPoints = (description: string) => {
     if (!description) return [];
-    return description.split(/[.•\n]/).filter(s => s.trim().length > 0).slice(0, 3);
+    return description.split(/[•\n]/).filter(s => s.trim().length > 0).slice(0, 5);
   };
 
   return (
     <div className="space-y-2 text-black">
       {/* Header */}
-      <header className="text-center pb-2 border-b border-gray-400">
-        <h1 className="text-xl font-bold tracking-wide mb-1">
-          {personalInfo.fullName || "Your Name"}
-        </h1>
-        <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-gray-700">
-          {personalInfo.email && <span>{personalInfo.email}</span>}
-          {personalInfo.email && personalInfo.phone && <span>|</span>}
-          {personalInfo.phone && <span>{personalInfo.phone}</span>}
-          {personalInfo.phone && personalInfo.location && <span>|</span>}
-          {personalInfo.location && <span>{personalInfo.location}</span>}
+      <header className="pb-1 border-b border-gray-400">
+        <div className="flex justify-between items-baseline">
+          <h1 className="text-xl font-bold tracking-wide">
+            {personalInfo.fullName || "Your Name"}
+          </h1>
+          <div className="text-[10px] text-gray-700">
+            {[personalInfo.phone, personalInfo.email].filter(Boolean).join(" | ")}
+          </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-1.5 text-[10px] text-gray-700">
-          {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
-          {personalInfo.linkedin && personalInfo.portfolio && <span>|</span>}
-          {personalInfo.portfolio && <span>{personalInfo.portfolio}</span>}
+        <div className="text-[10px] text-gray-700">
+          {[personalInfo.location, personalInfo.linkedin, personalInfo.portfolio].filter(Boolean).join(" | ")}
         </div>
       </header>
 
@@ -60,7 +56,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
                 </div>
                 <p className="text-[10px] text-gray-700">{exp.company}</p>
                 {exp.description && (
-                  <ul className="text-[10px] mt-0.5 leading-snug list-none">
+                  <ul className="text-[9px] mt-0.5 leading-snug list-none">
                     {getBulletPoints(exp.description).map((point, i) => (
                       <li key={i} className="flex gap-1">
                         <span>•</span>
@@ -112,7 +108,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
             Projects
           </h2>
-          <div className="space-y-1">
+          <div className="space-y-1 mt-1">
             {projects.map((proj) => (
               <div key={proj.id}>
                 <h3 className="font-bold text-xs">
@@ -129,7 +125,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
                   )}
                 </h3>
                 {proj.description && (
-                  <ul className="text-[10px] leading-snug list-none">
+                  <ul className="text-[9px] leading-snug list-none">
                     {getBulletPoints(proj.description).map((point, i) => (
                       <li key={i} className="flex gap-1">
                         <span>•</span>

@@ -10,24 +10,23 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
   const getBulletPoints = (description: string) => {
     if (!description) return [];
-    return description.split(/[.•\n]/).filter(s => s.trim().length > 0).slice(0, 3);
+    return description.split(/[•\n]/).filter(s => s.trim().length > 0).slice(0, 5);
   };
 
   return (
     <div className="space-y-2 text-black">
       {/* Header */}
-      <header className="border-b-2 border-black pb-2">
-        <h1 className="text-xl font-bold mb-0.5">
-          {personalInfo.fullName || "Your Name"}
-        </h1>
-        <div className="text-[10px] text-gray-700">
-          <div className="flex flex-wrap gap-2">
-            {personalInfo.email && <span>{personalInfo.email}</span>}
-            {personalInfo.phone && <span>{personalInfo.phone}</span>}
-            {personalInfo.location && <span>{personalInfo.location}</span>}
-            {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
-            {personalInfo.portfolio && <span>{personalInfo.portfolio}</span>}
+      <header className="border-b-2 border-black pb-1">
+        <div className="flex justify-between items-baseline">
+          <h1 className="text-xl font-bold">
+            {personalInfo.fullName || "Your Name"}
+          </h1>
+          <div className="text-[10px] text-gray-700">
+            {[personalInfo.phone, personalInfo.email].filter(Boolean).join(" | ")}
           </div>
+        </div>
+        <div className="text-[10px] text-gray-700">
+          {[personalInfo.location, personalInfo.linkedin, personalInfo.portfolio].filter(Boolean).join(" | ")}
         </div>
       </header>
 
@@ -62,7 +61,7 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
                   </span>
                 </div>
                 {exp.description && (
-                  <ul className="text-[10px] mt-0.5 leading-snug list-none">
+                  <ul className="text-[9px] mt-0.5 leading-snug list-none">
                     {getBulletPoints(exp.description).map((point, i) => (
                       <li key={i} className="flex gap-1">
                         <span>•</span>
@@ -83,7 +82,7 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           <h2 className="text-[10px] font-bold uppercase mb-1">
             Projects
           </h2>
-          <div className="space-y-1">
+          <div className="space-y-1 mt-1">
             {projects.map((proj) => (
               <div key={proj.id}>
                 <h3 className="font-bold text-xs">
@@ -100,7 +99,7 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
                   )}
                 </h3>
                 {proj.description && (
-                  <ul className="text-[10px] leading-snug list-none">
+                  <ul className="text-[9px] leading-snug list-none">
                     {getBulletPoints(proj.description).map((point, i) => (
                       <li key={i} className="flex gap-1">
                         <span>•</span>
