@@ -4,6 +4,17 @@
  import { useAuth } from "./useAuth";
  import { toast } from "@/hooks/use-toast";
  
+ const MAX_SKILLS = 100;
+ const MAX_SKILL_LENGTH = 50;
+ 
+ function validateAndSanitizeSkills(skills: string[]): string[] {
+   return skills
+     .map(s => s.toLowerCase().trim().substring(0, MAX_SKILL_LENGTH))
+     .filter(s => s.length > 0)
+     .filter((s, i, arr) => arr.indexOf(s) === i) // deduplicate
+     .slice(0, MAX_SKILLS);
+ }
+ 
  interface UserResume {
    id: string;
    user_id: string;
@@ -102,11 +113,13 @@
      mutationFn: async (skills: string[]) => {
        if (!user) throw new Error("Not authenticated");
  
+       const sanitizedSkills = validateAndSanitizeSkills(skills);
+ 
        const { error } = await supabase
          .from("user_resumes")
          .upsert({
            user_id: user.id,
-           skills: skills.map(s => s.toLowerCase().trim()),
+           skills: sanitizedSkills,
            source: userResume?.source || "manual",
            updated_at: new Date().toISOString(),
          }, {
@@ -136,11 +149,13 @@
      mutationFn: async (builderSkills: string[]) => {
        if (!user) throw new Error("Not authenticated");
  
+       const sanitizedSkills = validateAndSanitizeSkills(builderSkills);
+ 
        const { error } = await supabase
          .from("user_resumes")
          .upsert({
            user_id: user.id,
-           skills: builderSkills.map(s => s.toLowerCase().trim()),
+           skills: sanitizedSkills,
            source: "builder",
            updated_at: new Date().toISOString(),
          }, {
