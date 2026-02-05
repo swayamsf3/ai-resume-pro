@@ -1,5 +1,4 @@
  import { useState, useEffect } from "react";
- import { useNavigate } from "react-router-dom";
  import { useAuth } from "@/hooks/useAuth";
  import { supabase } from "@/integrations/supabase/client";
  import Header from "@/components/layout/Header";
@@ -9,15 +8,26 @@
  import { Label } from "@/components/ui/label";
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
  import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
  import { toast } from "sonner";
- import { User, Mail, Calendar, Loader2, Save } from "lucide-react";
+import { User, Mail, Calendar, Loader2, Save, Pencil } from "lucide-react";
  
  const Profile = () => {
    const { user } = useAuth();
-   const navigate = useNavigate();
    const [fullName, setFullName] = useState("");
    const [loading, setLoading] = useState(true);
    const [saving, setSaving] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [updatingEmail, setUpdatingEmail] = useState(false);
  
    useEffect(() => {
      const fetchProfile = async () => {
@@ -76,6 +86,52 @@
      }
    };
  
+  const handleEmailChange = async () => {
+    const trimmedEmail = newEmail.trim().toLowerCase();
+    
+    if (!trimmedEmail) {
+      toast.error("Email cannot be empty");
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    
+    if (trimmedEmail.length > 255) {
+      toast.error("Email must be less than 255 characters");
+      return;
+    }
+    
+    if (trimmedEmail === user?.email) {
+      toast.error("This is already your current email");
+      return;
+    }
+
+    setUpdatingEmail(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: trimmedEmail,
+      });
+
+      if (error) throw error;
+      
+      toast.success(
+        "Confirmation email sent! Please check both your old and new email addresses to confirm the change."
+      );
+      setEmailDialogOpen(false);
+      setNewEmail("");
+    } catch (error: any) {
+      console.error("Error updating email:", error);
+      toast.error(error.message || "Failed to update email");
+    } finally {
+      setUpdatingEmail(false);
+    }
+  };
+
    const getInitials = () => {
      if (fullName) {
        return fullName
@@ -191,7 +247,64 @@
                      <Mail className="w-4 h-4 text-muted-foreground" />
                      <span className="text-sm text-muted-foreground">Email</span>
                    </div>
-                   <span className="text-sm font-medium">{user?.email}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{user?.email}</span>
+                      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Change Email Address</DialogTitle>
+                            <DialogDescription>
+                              Enter your new email address. You'll receive confirmation emails at both
+                              your old and new addresses that you must click to complete the change.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="currentEmail">Current Email</Label>
+                              <Input
+                                id="currentEmail"
+                                value={user?.email || ""}
+                                disabled
+                                className="bg-muted"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="newEmail">New Email</Label>
+                              <Input
+                                id="newEmail"
+                                type="email"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                placeholder="Enter your new email address"
+                                maxLength={255}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEmailDialogOpen(false);
+                                setNewEmail("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button onClick={handleEmailChange} disabled={updatingEmail}>
+                              {updatingEmail ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Send Confirmation
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                  </div>
                  <div className="flex items-center justify-between py-3">
                    <div className="flex items-center gap-3">
