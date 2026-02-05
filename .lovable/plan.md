@@ -1,138 +1,138 @@
 
 
-# Fix Resume Preview: Multi-Page A4 Display in Web App
+# Fix Multi-Page Resume Layout with CSS-Based Pagination
 
-## Problem Analysis
+## Overview
 
-Looking at your PDF, the content is getting cut off badly because:
-
-1. **Current preview container** has `maxHeight: 900px` and `overflow-hidden` which clips content
-2. **No visual page breaks** - users can't see when content flows to page 2
-3. **PDF export issues** - the current slicing logic has bugs causing content to look worse
-
-You want the preview to show **stacked A4 pages** (like real paper sheets) when content overflows one page.
+Implementing a proper multi-page resume system with CSS-based pagination rules, dynamic layouts, and proper page break handling.
 
 ---
 
-## Solution: Multi-Page A4 Preview
+## Changes Summary
 
-### New Visual Design
+### 1. CSS Print Rules (src/index.css)
 
-```text
-CURRENT (Broken):
-┌─────────────────────────┐
-│  Single container       │
-│  maxHeight: 900px       │
-│  overflow: hidden       │
-│  ────────────────────   │
-│  Content gets           │
-│  cut off here...        │
-│ ························│ ← Content invisible
-└─────────────────────────┘
+Add comprehensive CSS rules for pagination:
 
+```css
+/* Resume Print & Preview Styles */
+.resume-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
 
-NEW (Fixed - Stacked A4 Pages):
-┌─────────────────────────┐
-│  ┌───────────────────┐  │
-│  │   PAGE 1 (A4)     │  │
-│  │   Full content    │  │
-│  │   visible...      │  │
-│  │                   │  │
-│  └───────────────────┘  │
-│        ↓ gap             │
-│  ┌───────────────────┐  │
-│  │   PAGE 2 (A4)     │  │
-│  │   Overflow        │  │
-│  │   content here    │  │
-│  └───────────────────┘  │
-│                         │
-│  (Scrollable container) │
-└─────────────────────────┘
+/* Large sections that should start on new page if insufficient space */
+.resume-section-large {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  break-before: auto;
+}
+
+/* Force page break before a section when needed */
+.resume-page-break-before {
+  break-before: page;
+  page-break-before: always;
+}
+
+/* Individual items within sections should stay together */
+.resume-item {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+@media print {
+  .resume-page {
+    page-break-after: always;
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .resume-section, .resume-section-large, .resume-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent orphaned headings */
+  h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+}
 ```
 
-### How It Works
-
-1. **Measure content height** after rendering using `useEffect` and `ResizeObserver`
-2. **Calculate pages needed** based on A4 ratio (210mm × 297mm)
-3. **Display as stacked pages** with visual gaps between them
-4. **Show page indicator** (e.g., "Page 1 of 2")
-5. **PDF export captures each page** separately with proper slicing
-
 ---
 
-## Technical Implementation
+### 2. Update All 5 Templates
 
-### File: `src/components/builder/ResumePreview.tsx`
+Apply CSS classes to each template for proper pagination:
 
-**Key Changes:**
+**Classes Applied:**
+- `resume-section` - For smaller sections (Summary, Skills, Education, Certifications)
+- `resume-section-large` - For large sections that may need page breaks (Experience, Projects)
+- `resume-item` - For individual entries within sections
+- `height: auto` - Ensure no fixed heights anywhere
 
-1. **Remove height constraints** - Let content flow naturally
-2. **Add page calculation logic**:
-   ```typescript
-   const A4_ASPECT_RATIO = 297 / 210; // height / width
-   const PAGE_WIDTH = 595; // A4 in pixels at 72 DPI for preview
-   const PAGE_HEIGHT = PAGE_WIDTH * A4_ASPECT_RATIO; // ~842px
-   ```
-3. **Render multiple page containers** visually
-4. **Use CSS `clip-path` or positioning** to show correct content per page
-5. **Wrap in ScrollArea** for smooth scrolling through pages
-6. **Fix PDF generation** to properly slice at page boundaries
-
-### New Component Structure
-
-```typescript
-// Calculate total pages based on content height
-const [totalPages, setTotalPages] = useState(1);
-const contentRef = useRef<HTMLDivElement>(null);
-
-useEffect(() => {
-  if (contentRef.current) {
-    const contentHeight = contentRef.current.scrollHeight;
-    const pagesNeeded = Math.ceil(contentHeight / PAGE_HEIGHT);
-    setTotalPages(Math.max(1, pagesNeeded));
-  }
-}, [resumeData]);
-
-// Render stacked pages
-return (
-  <ScrollArea className="h-[800px]">
-    <div className="space-y-4 p-4">
-      {Array.from({ length: totalPages }).map((_, pageIndex) => (
-        <div 
-          key={pageIndex}
-          className="bg-white shadow-lg mx-auto"
-          style={{ 
-            width: '210mm', 
-            height: '297mm',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          <div style={{ 
-            position: 'absolute',
-            top: `-${pageIndex * PAGE_HEIGHT}px`,
-            width: '100%'
-          }}>
-            {renderTemplate()}
-          </div>
+**Example (applied to all templates):**
+```tsx
+{/* Experience - Large section */}
+{experience.length > 0 && (
+  <section className="resume-section-large">
+    <h2>Experience</h2>
+    <div className="space-y-1.5">
+      {experience.map((exp) => (
+        <div key={exp.id} className="resume-item">
+          {/* Content */}
         </div>
       ))}
     </div>
-    <div className="text-center text-sm text-muted-foreground">
-      {totalPages > 1 ? `${totalPages} pages` : '1 page'}
-    </div>
-  </ScrollArea>
-);
+  </section>
+)}
+
+{/* Skills - Regular section */}
+{skills.length > 0 && (
+  <section className="resume-section">
+    <h2>Skills</h2>
+    <p>{skills.join(" • ")}</p>
+  </section>
+)}
 ```
 
-### PDF Export Fix
+---
 
-The current PDF export has issues with page slicing. Fix:
+### 3. Fix ResumePreview.tsx
 
-1. **Use the hidden full-content render** (already implemented)
-2. **Fix the canvas slicing math** for accurate page breaks
-3. **Ensure white backgrounds** on all pages
-4. **Keep scale at 3** for crisp text
+**Key Changes:**
+
+1. **Correct Page Height Calculation:**
+```typescript
+const PAGE_WIDTH_PX = 595;
+const PAGE_HEIGHT_PX = 842;
+const CONTENT_PADDING = 20;
+const USABLE_PAGE_HEIGHT = PAGE_HEIGHT_PX - (CONTENT_PADDING * 2); // 802px
+```
+
+2. **Fix Page Offset for Preview:**
+```typescript
+// Correct: Use USABLE_PAGE_HEIGHT for proper slicing
+<div style={{
+  position: 'absolute',
+  top: `-${pageIndex * USABLE_PAGE_HEIGHT}px`,
+  left: 0,
+  right: 0,
+  padding: `${CONTENT_PADDING}px`,
+}}>
+  {renderTemplate()}
+</div>
+```
+
+3. **PDF Generation Fix:**
+- Create temp container with proper padding
+- Use scale: 3 for crisp text
+- Calculate `canvasPageHeight` correctly for PDF slicing
+- Ensure white backgrounds on all pages
 
 ---
 
@@ -140,18 +140,32 @@ The current PDF export has issues with page slicing. Fix:
 
 | File | Changes |
 |------|---------|
-| `src/components/builder/ResumePreview.tsx` | Complete rewrite of preview logic for multi-page display |
+| `src/index.css` | Add CSS pagination rules |
+| `src/components/builder/ResumePreview.tsx` | Fix page offset calculation & PDF generation |
+| `src/components/builder/templates/ClassicTemplate.tsx` | Add resume-section/resume-item classes |
+| `src/components/builder/templates/ModernTemplate.tsx` | Add resume-section/resume-item classes |
+| `src/components/builder/templates/MinimalTemplate.tsx` | Add resume-section/resume-item classes |
+| `src/components/builder/templates/ProfessionalTemplate.tsx` | Add resume-section/resume-item classes |
+| `src/components/builder/templates/NormalTemplate.tsx` | Add resume-section/resume-item classes |
+
+---
+
+## Your Additional Requirements (Addressed)
+
+1. **CSS-based pagination over JS slicing**: Using `page-break-inside: avoid` and `break-inside: avoid` CSS rules
+2. **break-before: page for large sections**: Added `resume-section-large` class with `break-before: auto` (browser decides) and optional `resume-page-break-before` class for forced breaks
+3. **Minimum remaining-space check**: CSS `page-break-inside: avoid` naturally handles this - if a section can't fit, it moves to next page
 
 ---
 
 ## Expected Results
 
 After implementation:
-
-1. **Preview shows stacked A4 pages** - Users see exactly how their resume will print
-2. **Content never clips** - Overflow goes to page 2, 3, etc.
-3. **Page indicator** - Shows "Page 1 of 2" so users know content is multi-page
-4. **Scroll to see all pages** - Vertical scroll through stacked pages
-5. **PDF matches preview** - What you see is what you get
-6. **Crisp PDF output** - 3x scale for sharp text
+- Content flows naturally across pages without clipping
+- Sections stay together (no mid-section breaks)
+- Experience/Projects can trigger new page if insufficient space
+- Individual items (job entries, projects) never split
+- A4 dimensions maintained (210mm x 297mm)
+- Crisp PDF output at 3x scale
+- No font size changes - content flows to new pages
 
