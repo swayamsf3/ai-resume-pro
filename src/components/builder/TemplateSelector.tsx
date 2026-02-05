@@ -30,7 +30,7 @@ const TemplateSelector = ({ onSelectTemplate }: TemplateSelectorProps) => {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
           {templates.map((template, index) => (
             <motion.div
               key={template.id}
@@ -79,6 +79,25 @@ const TemplateSelector = ({ onSelectTemplate }: TemplateSelectorProps) => {
                           <div className="h-1.5 bg-gray-200 rounded w-1/3"></div>
                           <div className="h-1 bg-gray-100 rounded w-4/5"></div>
                           <div className="h-1 bg-gray-100 rounded w-3/5"></div>
+                        </div>
+                      ) : template.id === "normal" ? (
+                        <div className="h-full space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div className="h-2.5 bg-gray-800 rounded w-1/3"></div>
+                            <div className="h-1 bg-gray-300 rounded w-1/3"></div>
+                          </div>
+                          <div className="border-b border-gray-400 mb-1"></div>
+                          <div className="h-1.5 bg-gray-200 rounded w-1/4"></div>
+                          <div className="space-y-0.5">
+                            <div className="flex gap-1">
+                              <div className="h-1 w-1 bg-gray-400 rounded-full mt-0.5"></div>
+                              <div className="h-1 bg-gray-100 rounded w-3/4"></div>
+                            </div>
+                            <div className="flex gap-1">
+                              <div className="h-1 w-1 bg-gray-400 rounded-full mt-0.5"></div>
+                              <div className="h-1 bg-gray-100 rounded w-2/3"></div>
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="h-full space-y-2">
