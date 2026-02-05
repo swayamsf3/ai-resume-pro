@@ -32,7 +32,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Summary */}
       {personalInfo.summary && (
-        <section>
+        <section className="resume-section">
           <p className="text-[11px] leading-snug text-center">
             {personalInfo.summary}
           </p>
@@ -41,13 +41,13 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Experience */}
       {experience.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
             Experience
           </h2>
           <div className="space-y-1.5">
             {experience.map((exp) => (
-              <div key={exp.id}>
+              <div key={exp.id} className="resume-item">
                 <div className="flex justify-between items-baseline">
                   <h3 className="font-bold text-xs">{exp.position}</h3>
                   <span className="text-[10px] text-gray-600 whitespace-nowrap">
@@ -73,13 +73,13 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Education */}
       {education.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
             Education
           </h2>
           <div className="space-y-0.5">
             {education.map((edu) => (
-              <p key={edu.id} className="text-[10px] text-center">
+              <p key={edu.id} className="resume-item text-[10px] text-center">
                 <span className="font-bold">{edu.degree}{edu.field && ` — ${edu.field}`}</span>
                 {" | "}{edu.institution}
                 {" | "}{formatDate(edu.startDate)} — {formatDate(edu.endDate)}
@@ -92,7 +92,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Skills */}
       {skills.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
             Skills
           </h2>
@@ -104,7 +104,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Certifications */}
       {certifications && certifications.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
             Certifications
           </h2>
@@ -116,13 +116,13 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Projects */}
       {projects.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="text-[10px] font-bold uppercase tracking-[0.15em] text-center mb-1 border-b border-gray-300 pb-0.5">
             Projects
           </h2>
           <div className="space-y-1 mt-1">
             {projects.map((proj) => (
-              <div key={proj.id}>
+              <div key={proj.id} className="resume-item">
                 <h3 className="font-bold text-xs">
                   {proj.name}
                   {proj.link && (

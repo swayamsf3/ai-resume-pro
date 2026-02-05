@@ -196,4 +196,53 @@
     background: hsl(222 47% 11% / 0.8);
     border: 1px solid hsl(0 0% 100% / 0.1);
   }
+
+  /* Resume Print & Preview Styles */
+  .resume-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Large sections that should start on new page if insufficient space */
+  .resume-section-large {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    break-before: auto;
+  }
+
+  /* Force page break before a section when needed */
+  .resume-page-break-before {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  /* Individual items within sections should stay together */
+  .resume-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
+@media print {
+  .resume-page {
+    page-break-after: always;
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .resume-section,
+  .resume-section-large,
+  .resume-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent orphaned headings */
+  h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
 }

@@ -35,7 +35,7 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Summary */}
       {personalInfo.summary && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Professional Summary
           </h2>
@@ -47,13 +47,13 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Experience */}
       {experience.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Experience
           </h2>
           <div className="space-y-1.5">
             {experience.map((exp) => (
-              <div key={exp.id}>
+              <div key={exp.id} className="resume-item">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-xs">{exp.position}</h3>
@@ -81,13 +81,13 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Education */}
       {education.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Education
           </h2>
           <div className="space-y-0.5">
             {education.map((edu) => (
-              <p key={edu.id} className="text-[10px]">
+              <p key={edu.id} className="resume-item text-[10px]">
                 <span className="font-semibold">{edu.degree}{edu.field && ` in ${edu.field}`}</span>
                 {" | "}{edu.institution}
                 {" | "}{formatDate(edu.startDate)} - {formatDate(edu.endDate)}
@@ -100,7 +100,7 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Skills */}
       {skills.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Skills
           </h2>
@@ -112,7 +112,7 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Certifications */}
       {certifications && certifications.length > 0 && (
-        <section>
+        <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Certifications
           </h2>
@@ -124,13 +124,13 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
 
       {/* Projects */}
       {projects.length > 0 && (
-        <section>
+        <section className="resume-section-large">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Projects
           </h2>
           <div className="space-y-1 mt-1">
             {projects.map((proj) => (
-              <div key={proj.id}>
+              <div key={proj.id} className="resume-item">
                 <div className="flex items-baseline gap-1 flex-wrap">
                   <h3 className="font-semibold text-xs">{proj.name}</h3>
                   {proj.link && (
