@@ -1,28 +1,31 @@
- import { useState, useEffect } from "react";
- import Header from "@/components/layout/Header";
- import { Input } from "@/components/ui/input";
- import { motion } from "framer-motion";
- import { Search, Sparkles, Loader2 } from "lucide-react";
- import { useAuth } from "@/hooks/useAuth";
- import { useJobMatches } from "@/hooks/useJobMatches";
- import { useSavedJobs } from "@/hooks/useSavedJobs";
- import { useUserResume } from "@/hooks/useUserResume";
- import { JobCard } from "@/components/jobs/JobCard";
- import { ResumeStatus } from "@/components/jobs/ResumeStatus";
- import { ResumeUploader } from "@/components/jobs/ResumeUploader";
- import { SkillsEditor } from "@/components/jobs/SkillsEditor";
- import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import Header from "@/components/layout/Header";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Search, Sparkles, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useJobMatches } from "@/hooks/useJobMatches";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
+import { useUserResume } from "@/hooks/useUserResume";
+import { JobCard } from "@/components/jobs/JobCard";
+import { ResumeStatus } from "@/components/jobs/ResumeStatus";
+import { ResumeUploader } from "@/components/jobs/ResumeUploader";
+import { SkillsEditor } from "@/components/jobs/SkillsEditor";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
  
- const Jobs = () => {
-   const { user, loading: authLoading } = useAuth();
-   const navigate = useNavigate();
-   const [searchQuery, setSearchQuery] = useState("");
-   const [showUploader, setShowUploader] = useState(false);
-   const [showSkillsEditor, setShowSkillsEditor] = useState(false);
- 
-   const { data: jobData, isLoading: jobsLoading } = useJobMatches();
-   const { isJobSaved, toggleSaveJob } = useSavedJobs();
-   const { hasResume, syncFromBuilder } = useUserResume();
+const Jobs = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showUploader, setShowUploader] = useState(false);
+  const [showSkillsEditor, setShowSkillsEditor] = useState(false);
+  const [minMatchPercentage, setMinMatchPercentage] = useState(0);
+
+  const { data: jobData, isLoading: jobsLoading } = useJobMatches();
+  const { isJobSaved, toggleSaveJob } = useSavedJobs();
+  const { hasResume, syncFromBuilder } = useUserResume();
  
    useEffect(() => {
      if (!authLoading && !user) {
@@ -30,20 +33,51 @@
      }
    }, [user, authLoading, navigate]);
  
-   const jobs = jobData?.jobs || [];
-   const filteredJobs = jobs.filter((job) => {
-     const query = searchQuery.toLowerCase();
-     return (
-       job.title.toLowerCase().includes(query) ||
-       job.company.toLowerCase().includes(query) ||
-       job.skills.some((skill) => skill.toLowerCase().includes(query))
-     );
-   });
- 
-   const handleSyncFromBuilder = () => {
-     const builderSkills = ["react", "typescript", "javascript", "css", "html"];
-     syncFromBuilder.mutate(builderSkills);
-   };
+  const jobs = jobData?.jobs || [];
+  const filteredJobs = jobs.filter((job) => {
+    // Match percentage filter (only apply if user has skills)
+    if (hasResume && job.match_percentage < minMatchPercentage) {
+      return false;
+    }
+    
+    // Text search filter
+    const query = searchQuery.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(query) ||
+      job.company.toLowerCase().includes(query) ||
+      job.skills.some((skill) => skill.toLowerCase().includes(query))
+    );
+  });
+
+  const handleSyncFromBuilder = () => {
+    const savedSkills = localStorage.getItem('builderSkills');
+    if (savedSkills) {
+      try {
+        const builderSkills = JSON.parse(savedSkills);
+        if (Array.isArray(builderSkills) && builderSkills.length > 0) {
+          syncFromBuilder.mutate(builderSkills);
+        } else {
+          toast({
+            title: "No skills found",
+            description: "Add skills in the Resume Builder first.",
+            variant: "destructive",
+          });
+        }
+      } catch {
+        toast({
+          title: "Sync failed",
+          description: "Could not read skills from Resume Builder.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "No skills found",
+        description: "Build your resume first to sync skills.",
+        variant: "destructive",
+      });
+    }
+  };
  
    if (authLoading) {
      return (
@@ -95,23 +129,44 @@
              )}
            </motion.div>
  
-           {/* Search */}
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.1 }}
-             className="max-w-2xl mx-auto mb-8"
-           >
-             <div className="relative">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-               <Input
-                 placeholder="Search by job title, company, or skill..."
-                 className="pl-12 h-14 text-base rounded-xl border-border"
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-               />
-             </div>
-           </motion.div>
+            {/* Search */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="max-w-2xl mx-auto mb-8"
+            >
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search by job title, company, or skill..."
+                  className="pl-12 h-14 text-base rounded-xl border-border"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              {/* Match Percentage Filter */}
+              {hasResume && (
+                <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                  {[
+                    { label: "All Jobs", value: 0 },
+                    { label: "50%+", value: 50 },
+                    { label: "60%+", value: 60 },
+                    { label: "70%+", value: 70 },
+                  ].map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={minMatchPercentage === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMinMatchPercentage(filter.value)}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
  
            {/* Results count */}
            <motion.div

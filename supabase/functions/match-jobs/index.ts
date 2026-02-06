@@ -34,34 +34,68 @@
      .replace(/-/g, " ");
  }
  
- function skillsMatch(userSkill: string, jobSkill: string): boolean {
-   const normalizedUser = normalizeSkill(userSkill);
-   const normalizedJob = normalizeSkill(jobSkill);
-   
-   // Direct match
-   if (normalizedUser === normalizedJob) return true;
-   
-   // Handle common variations
-   const variations: Record<string, string[]> = {
-     "nodejs": ["node", "node.js"],
-     "javascript": ["js"],
-     "typescript": ["ts"],
-     "postgresql": ["postgres", "psql"],
-     "react native": ["reactnative"],
-     "vue": ["vuejs", "vue.js"],
-     "next": ["nextjs", "next.js"],
-     "tailwind": ["tailwindcss"],
-   };
-   
-   for (const [key, aliases] of Object.entries(variations)) {
-     const allForms = [key, ...aliases];
-     if (allForms.includes(normalizedUser) && allForms.includes(normalizedJob)) {
-       return true;
-     }
-   }
-   
-   return false;
- }
+function skillsMatch(userSkill: string, jobSkill: string): boolean {
+  const normalizedUser = normalizeSkill(userSkill);
+  const normalizedJob = normalizeSkill(jobSkill);
+  
+  // Direct match
+  if (normalizedUser === normalizedJob) return true;
+  
+  // Handle common variations - expanded alias mapping
+  const variations: Record<string, string[]> = {
+    // JavaScript ecosystem
+    "nodejs": ["node", "nodejs", "node js"],
+    "javascript": ["js", "ecmascript", "es6", "es2015"],
+    "typescript": ["ts"],
+    "react": ["reactjs"],
+    "react native": ["reactnative", "rn"],
+    "vue": ["vuejs", "vue 3"],
+    "angular": ["angularjs"],
+    "next": ["nextjs"],
+    "nuxt": ["nuxtjs"],
+    "express": ["expressjs"],
+    
+    // Styling
+    "tailwind": ["tailwindcss", "tailwind css"],
+    "css": ["css3", "cascading style sheets"],
+    "sass": ["scss"],
+    
+    // Databases
+    "postgresql": ["postgres", "psql", "pg"],
+    "mongodb": ["mongo"],
+    "mysql": ["mariadb"],
+    "sql": ["structured query language"],
+    
+    // Cloud & DevOps
+    "aws": ["amazon web services", "amazon aws"],
+    "gcp": ["google cloud", "google cloud platform"],
+    "azure": ["microsoft azure"],
+    "kubernetes": ["k8s"],
+    "docker": ["containerization"],
+    
+    // Languages
+    "python": ["py", "python3"],
+    "csharp": ["c#", "c sharp", "dotnet", "net"],
+    "golang": ["go"],
+    "cpp": ["c++"],
+    
+    // Other
+    "graphql": ["gql"],
+    "rest": ["restful", "rest api"],
+    "ci cd": ["cicd", "continuous integration", "continuous deployment"],
+    "machine learning": ["ml"],
+    "artificial intelligence": ["ai"],
+  };
+  
+  for (const [key, aliases] of Object.entries(variations)) {
+    const allForms = [key, ...aliases];
+    if (allForms.includes(normalizedUser) && allForms.includes(normalizedJob)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
  
  function calculateMatch(userSkills: string[], jobSkills: string[]): {
    matchPercentage: number;
