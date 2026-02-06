@@ -99,7 +99,7 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
 
       // Render to canvas with high scale for crisp text
       const canvas = await html2canvas(clone, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
@@ -118,7 +118,12 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       const pageHeightInCanvasPixels = (canvas.width * pdfHeight) / pdfWidth;
       const pdfTotalPages = Math.ceil(canvas.height / pageHeightInCanvasPixels);
 
-      const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4",
+        compress: true
+      });
 
       for (let page = 0; page < pdfTotalPages; page++) {
         if (page > 0) {
@@ -152,8 +157,8 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
         const pageHeightMm = (sourceHeight / canvas.width) * pdfWidth;
 
         pdf.addImage(
-          pageCanvas.toDataURL('image/png'),
-          'PNG',
+          pageCanvas.toDataURL('image/jpeg', 0.92),
+          'JPEG',
           0,
           0,
           pdfWidth,
