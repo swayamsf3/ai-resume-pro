@@ -1,171 +1,91 @@
 
 
-# Fix Multi-Page Resume Layout with CSS-Based Pagination
+# Plan: Reduce Resume PDF File Size
 
-## Overview
+## Problem Analysis
 
-Implementing a proper multi-page resume system with CSS-based pagination rules, dynamic layouts, and proper page break handling.
+The current PDF generation creates files of 14-15 MB due to:
+- **3x rendering scale** producing extremely high-resolution images (1785 x 2526 pixels per page)
+- **PNG format** which is lossless and uncompressed
+- Each page being stored as a full-resolution raster image
 
----
+## Solution Overview
 
-## Changes Summary
-
-### 1. CSS Print Rules (src/index.css)
-
-Add comprehensive CSS rules for pagination:
-
-```css
-/* Resume Print & Preview Styles */
-.resume-section {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-/* Large sections that should start on new page if insufficient space */
-.resume-section-large {
-  page-break-inside: avoid;
-  break-inside: avoid;
-  break-before: auto;
-}
-
-/* Force page break before a section when needed */
-.resume-page-break-before {
-  break-before: page;
-  page-break-before: always;
-}
-
-/* Individual items within sections should stay together */
-.resume-item {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-@media print {
-  .resume-page {
-    page-break-after: always;
-    width: 210mm;
-    height: 297mm;
-    margin: 0;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-
-  .resume-section, .resume-section-large, .resume-item {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* Prevent orphaned headings */
-  h2, h3 {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-}
-```
+Reduce the PDF size to 4-5 MB while maintaining good visual quality by:
+1. Lowering the canvas scale from 3x to 2x
+2. Switching from PNG to JPEG format with quality optimization
+3. Adding PDF compression
 
 ---
 
-### 2. Update All 5 Templates
+## Implementation Details
 
-Apply CSS classes to each template for proper pagination:
+### File: `src/components/builder/ResumePreview.tsx`
 
-**Classes Applied:**
-- `resume-section` - For smaller sections (Summary, Skills, Education, Certifications)
-- `resume-section-large` - For large sections that may need page breaks (Experience, Projects)
-- `resume-item` - For individual entries within sections
-- `height: auto` - Ensure no fixed heights anywhere
-
-**Example (applied to all templates):**
+#### Change 1: Reduce canvas rendering scale
 ```tsx
-{/* Experience - Large section */}
-{experience.length > 0 && (
-  <section className="resume-section-large">
-    <h2>Experience</h2>
-    <div className="space-y-1.5">
-      {experience.map((exp) => (
-        <div key={exp.id} className="resume-item">
-          {/* Content */}
-        </div>
-      ))}
-    </div>
-  </section>
-)}
+// Before (line 101-102)
+const canvas = await html2canvas(clone, {
+  scale: 3,
 
-{/* Skills - Regular section */}
-{skills.length > 0 && (
-  <section className="resume-section">
-    <h2>Skills</h2>
-    <p>{skills.join(" • ")}</p>
-  </section>
-)}
+// After
+const canvas = await html2canvas(clone, {
+  scale: 2,
 ```
+**Impact**: Reduces image size by ~55% (from 3x to 2x means 4/9th of the pixels). Text remains crisp at 2x for A4 documents.
 
----
+#### Change 2: Switch from PNG to JPEG with quality setting
+```tsx
+// Before (line 154-156)
+pdf.addImage(
+  pageCanvas.toDataURL('image/png'),
+  'PNG',
 
-### 3. Fix ResumePreview.tsx
-
-**Key Changes:**
-
-1. **Correct Page Height Calculation:**
-```typescript
-const PAGE_WIDTH_PX = 595;
-const PAGE_HEIGHT_PX = 842;
-const CONTENT_PADDING = 20;
-const USABLE_PAGE_HEIGHT = PAGE_HEIGHT_PX - (CONTENT_PADDING * 2); // 802px
+// After
+pdf.addImage(
+  pageCanvas.toDataURL('image/jpeg', 0.92),
+  'JPEG',
 ```
+**Impact**: JPEG with 0.92 quality provides ~70-80% size reduction compared to PNG while maintaining excellent visual quality for text-heavy documents.
 
-2. **Fix Page Offset for Preview:**
-```typescript
-// Correct: Use USABLE_PAGE_HEIGHT for proper slicing
-<div style={{
-  position: 'absolute',
-  top: `-${pageIndex * USABLE_PAGE_HEIGHT}px`,
-  left: 0,
-  right: 0,
-  padding: `${CONTENT_PADDING}px`,
-}}>
-  {renderTemplate()}
-</div>
+#### Change 3: Enable PDF compression
+```tsx
+// Before (line 121)
+const pdf = new jsPDF("p", "mm", "a4");
+
+// After
+const pdf = new jsPDF({
+  orientation: "p",
+  unit: "mm",
+  format: "a4",
+  compress: true
+});
 ```
-
-3. **PDF Generation Fix:**
-- Create temp container with proper padding
-- Use scale: 3 for crisp text
-- Calculate `canvasPageHeight` correctly for PDF slicing
-- Ensure white backgrounds on all pages
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/index.css` | Add CSS pagination rules |
-| `src/components/builder/ResumePreview.tsx` | Fix page offset calculation & PDF generation |
-| `src/components/builder/templates/ClassicTemplate.tsx` | Add resume-section/resume-item classes |
-| `src/components/builder/templates/ModernTemplate.tsx` | Add resume-section/resume-item classes |
-| `src/components/builder/templates/MinimalTemplate.tsx` | Add resume-section/resume-item classes |
-| `src/components/builder/templates/ProfessionalTemplate.tsx` | Add resume-section/resume-item classes |
-| `src/components/builder/templates/NormalTemplate.tsx` | Add resume-section/resume-item classes |
-
----
-
-## Your Additional Requirements (Addressed)
-
-1. **CSS-based pagination over JS slicing**: Using `page-break-inside: avoid` and `break-inside: avoid` CSS rules
-2. **break-before: page for large sections**: Added `resume-section-large` class with `break-before: auto` (browser decides) and optional `resume-page-break-before` class for forced breaks
-3. **Minimum remaining-space check**: CSS `page-break-inside: avoid` naturally handles this - if a section can't fit, it moves to next page
+**Impact**: Enables built-in jsPDF compression, typically providing 10-20% additional reduction.
 
 ---
 
 ## Expected Results
 
-After implementation:
-- Content flows naturally across pages without clipping
-- Sections stay together (no mid-section breaks)
-- Experience/Projects can trigger new page if insufficient space
-- Individual items (job entries, projects) never split
-- A4 dimensions maintained (210mm x 297mm)
-- Crisp PDF output at 3x scale
-- No font size changes - content flows to new pages
+| Metric | Before | After |
+|--------|--------|-------|
+| Canvas Scale | 3x | 2x |
+| Image Format | PNG (lossless) | JPEG (0.92 quality) |
+| PDF Compression | Off | On |
+| **File Size** | 14-15 MB | **3-5 MB** |
+
+## Quality Assurance
+
+- Text remains sharp and readable at 2x scale (standard for PDF exports)
+- JPEG artifacts are minimal at 0.92 quality, invisible on resume text/layouts
+- Multi-page functionality remains unchanged
+- No visual difference when printed
+
+---
+
+## Technical Notes
+
+- The 2x scale produces 1190 x 1684 pixel images per page, which is sufficient for 150+ DPI when printed on A4
+- JPEG quality of 0.92 is the sweet spot—higher provides diminishing returns, lower may show artifacts on thin text
+- jsPDF's `compress: true` uses DEFLATE algorithm on the internal PDF streams
 
