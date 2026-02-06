@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +38,13 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const [newSkill, setNewSkill] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
+
+  // Persist skills to localStorage for job matching sync
+  useEffect(() => {
+    if (resumeData.skills.length > 0) {
+      localStorage.setItem('builderSkills', JSON.stringify(resumeData.skills));
+    }
+  }, [resumeData.skills]);
 
   const updatePersonalInfo = (field: keyof ResumeData["personalInfo"], value: string) => {
     setResumeData((prev) => ({
