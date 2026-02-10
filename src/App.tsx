@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
+import AdminJobs from "./pages/AdminJobs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/jobs"
+              element={
+                <ProtectedRoute>
+                  <AdminJobs />
                 </ProtectedRoute>
               }
             />

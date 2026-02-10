@@ -1,13 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Briefcase, User, Menu, X, LogOut, Settings } from "lucide-react";
+import { FileText, Briefcase, User, Menu, X, LogOut, Settings, Shield } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+const ADMIN_EMAIL = "admin@swayam.com";
+
 const Header = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isAdmin = user?.email === ADMIN_EMAIL;
   const navLinks = [{
     path: "/",
     label: "Home",
@@ -61,6 +64,14 @@ const Header = () => {
                     Profile
                   </Button>
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin/jobs">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <Shield className="w-4 h-4" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Button variant="outline" size="sm" className="gap-2" onClick={signOut}>
                   <LogOut className="w-4 h-4" />
                   Logout
@@ -116,14 +127,22 @@ const Header = () => {
                       Profile
                     </Button>
                   </Link>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2" 
-                    onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </Button>
+                   {isAdmin && (
+                     <Link to="/admin/jobs" onClick={() => setMobileMenuOpen(false)}>
+                       <Button variant="ghost" className="w-full justify-start gap-2">
+                         <Shield className="w-4 h-4" />
+                         Admin
+                       </Button>
+                     </Link>
+                   )}
+                   <Button 
+                     variant="outline" 
+                     className="w-full justify-start gap-2" 
+                     onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                   >
+                     <LogOut className="w-4 h-4" />
+                     Logout
+                   </Button>
                 </>
               ) : (
                 <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
