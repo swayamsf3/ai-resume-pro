@@ -112,6 +112,201 @@ const FEEDS: FeedConfig[] = [
       },
     ],
   },
+  {
+    name: "DesignHub",
+    url: "https://designhub.example.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "dh-001",
+        job_title: "UI/UX Designer",
+        job_location: "Los Angeles, CA",
+        job_type: "Full-time",
+        salary: "$110,000 - $145,000",
+        description:
+          "Lead end-to-end design for our SaaS platform. Conduct user research, build wireframes & prototypes, and collaborate with engineers to ship polished interfaces.",
+        required_skills: ["Figma", "User Research", "Design Systems", "Prototyping", "Accessibility"],
+        application_url: "https://designhub.example.com/careers/dh-001",
+      },
+      {
+        job_id: "dh-002",
+        job_title: "Product Designer",
+        job_location: "Remote",
+        job_type: "Full-time",
+        salary: "$120,000 - $155,000",
+        description:
+          "Own the design process from discovery to delivery. Create high-fidelity mockups in Figma and Sketch, run usability tests, and define our design language.",
+        required_skills: ["Figma", "Sketch", "Adobe XD", "User Research", "Design Systems"],
+        application_url: "https://designhub.example.com/careers/dh-002",
+      },
+      {
+        job_id: "dh-003",
+        job_title: "Frontend Developer (Design Engineering)",
+        job_location: "Seattle, WA",
+        job_type: "Full-time",
+        salary: "$130,000 - $165,000",
+        description:
+          "Bridge design and engineering by building pixel-perfect, accessible component libraries in React. Translate Figma designs into production-ready code.",
+        required_skills: ["React", "TypeScript", "CSS", "Accessibility", "Storybook"],
+        application_url: "https://designhub.example.com/careers/dh-003",
+      },
+    ],
+  },
+  {
+    name: "FinanceFirst",
+    url: "https://financefirst.example.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "ff-001",
+        job_title: "Quantitative Analyst",
+        job_location: "New York, NY",
+        job_type: "Full-time",
+        salary: "$160,000 - $220,000",
+        description:
+          "Develop quantitative models for risk analysis and trading strategies. Work with large financial datasets using Python, R, and proprietary modeling frameworks.",
+        required_skills: ["Python", "R", "Quantitative Modeling", "SQL", "Statistics"],
+        application_url: "https://financefirst.example.com/careers/ff-001",
+      },
+      {
+        job_id: "ff-002",
+        job_title: "Security Engineer",
+        job_location: "Remote",
+        job_type: "Full-time",
+        salary: "$145,000 - $190,000",
+        description:
+          "Protect our fintech platform by conducting penetration tests, managing SOC2 compliance, and building automated security scanning pipelines.",
+        required_skills: ["Cybersecurity", "SOC2", "Penetration Testing", "AWS", "Python"],
+        application_url: "https://financefirst.example.com/careers/ff-002",
+      },
+      {
+        job_id: "ff-003",
+        job_title: "Full Stack Engineer (Fintech)",
+        job_location: "Chicago, IL",
+        job_type: "Full-time",
+        salary: "$135,000 - $175,000",
+        description:
+          "Build and scale our payments platform using React and Node.js. Implement real-time transaction processing and ensure PCI-DSS compliance.",
+        required_skills: ["React", "Node.js", "TypeScript", "PostgreSQL", "Redis"],
+        application_url: "https://financefirst.example.com/careers/ff-003",
+      },
+    ],
+  },
+  {
+    name: "HealthTech Solutions",
+    url: "https://healthtech.example.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "ht-001",
+        job_title: "ML Engineer (Healthcare)",
+        job_location: "Boston, MA",
+        job_type: "Full-time",
+        salary: "$150,000 - $195,000",
+        description:
+          "Build machine learning models for medical imaging and patient outcome prediction. Ensure HIPAA compliance and work with clinical teams to validate results.",
+        required_skills: ["Python", "TensorFlow", "PyTorch", "HIPAA", "Machine Learning"],
+        application_url: "https://healthtech.example.com/careers/ht-001",
+      },
+      {
+        job_id: "ht-002",
+        job_title: "Backend Engineer (Health Data)",
+        job_location: "Remote",
+        job_type: "Full-time",
+        salary: "$130,000 - $170,000",
+        description:
+          "Design FHIR-compliant APIs for health data exchange. Build scalable microservices in Go and ensure data integrity across distributed systems.",
+        required_skills: ["Go", "FHIR", "PostgreSQL", "Docker", "HIPAA"],
+        application_url: "https://healthtech.example.com/careers/ht-002",
+      },
+      {
+        job_id: "ht-003",
+        job_title: "Mobile Developer (Health Apps)",
+        job_location: "San Diego, CA (Hybrid)",
+        job_type: "Full-time",
+        salary: "$125,000 - $160,000",
+        description:
+          "Develop cross-platform mobile applications for patient engagement using React Native. Integrate with wearable devices and health monitoring APIs.",
+        required_skills: ["React Native", "TypeScript", "Swift", "Kotlin", "REST"],
+        application_url: "https://healthtech.example.com/careers/ht-003",
+      },
+    ],
+  },
+  {
+    name: "GreenEnergy Co",
+    url: "https://greenenergy.example.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "ge-001",
+        job_title: "Embedded Systems Engineer",
+        job_location: "Denver, CO",
+        job_type: "Full-time",
+        salary: "$120,000 - $155,000",
+        description:
+          "Develop firmware for solar inverters and battery management systems. Program in C/C++ on RTOS platforms and work closely with hardware teams.",
+        required_skills: ["C", "C++", "RTOS", "Embedded Linux", "Hardware Integration"],
+        application_url: "https://greenenergy.example.com/careers/ge-001",
+      },
+      {
+        job_id: "ge-002",
+        job_title: "Data Analyst (Energy)",
+        job_location: "Remote",
+        job_type: "Full-time",
+        salary: "$95,000 - $125,000",
+        description:
+          "Analyze energy production and consumption data to optimize grid efficiency. Build dashboards in Tableau and Power BI, and design ETL pipelines.",
+        required_skills: ["SQL", "Tableau", "Power BI", "Python", "ETL"],
+        application_url: "https://greenenergy.example.com/careers/ge-002",
+      },
+      {
+        job_id: "ge-003",
+        job_title: "Platform Engineer",
+        job_location: "Austin, TX (Hybrid)",
+        job_type: "Full-time",
+        salary: "$135,000 - $170,000",
+        description:
+          "Build and maintain the cloud infrastructure powering our IoT sensor network. Manage Kubernetes clusters, CI/CD pipelines, and observability tooling.",
+        required_skills: ["Kubernetes", "AWS", "Terraform", "CI/CD", "Prometheus"],
+        application_url: "https://greenenergy.example.com/careers/ge-003",
+      },
+    ],
+  },
+  {
+    name: "MediaStack",
+    url: "https://mediastack.example.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "ms-001",
+        job_title: "Video Streaming Engineer",
+        job_location: "Los Angeles, CA",
+        job_type: "Full-time",
+        salary: "$140,000 - $185,000",
+        description:
+          "Build low-latency video streaming infrastructure using FFmpeg, WebRTC, and HLS. Optimize encoding pipelines for adaptive bitrate delivery at scale.",
+        required_skills: ["FFmpeg", "WebRTC", "HLS", "Python", "AWS"],
+        application_url: "https://mediastack.example.com/careers/ms-001",
+      },
+      {
+        job_id: "ms-002",
+        job_title: "Content Platform Developer",
+        job_location: "Remote",
+        job_type: "Full-time",
+        salary: "$120,000 - $155,000",
+        description:
+          "Develop the content management and search platform powering our media library. Implement full-text search with Elasticsearch and build React-based editorial tools.",
+        required_skills: ["React", "TypeScript", "Elasticsearch", "Node.js", "PostgreSQL"],
+        application_url: "https://mediastack.example.com/careers/ms-002",
+      },
+      {
+        job_id: "ms-003",
+        job_title: "QA Automation Engineer",
+        job_location: "New York, NY (Hybrid)",
+        job_type: "Full-time",
+        salary: "$110,000 - $140,000",
+        description:
+          "Design and maintain automated test suites for our streaming platform. Use Cypress for E2E testing, Selenium for cross-browser coverage, and k6 for performance testing.",
+        required_skills: ["Cypress", "Selenium", "k6", "JavaScript", "CI/CD"],
+        application_url: "https://mediastack.example.com/careers/ms-003",
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
