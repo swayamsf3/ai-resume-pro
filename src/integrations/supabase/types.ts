@@ -20,12 +20,14 @@ export type Database = {
           company: string
           created_at: string
           description: string | null
+          external_id: string | null
           id: string
           is_active: boolean
           location: string
           posted_at: string
           salary: string | null
           skills: string[]
+          source: string
           title: string
           type: string
         }
@@ -34,12 +36,14 @@ export type Database = {
           company: string
           created_at?: string
           description?: string | null
+          external_id?: string | null
           id?: string
           is_active?: boolean
           location: string
           posted_at?: string
           salary?: string | null
           skills?: string[]
+          source?: string
           title: string
           type: string
         }
@@ -48,12 +52,14 @@ export type Database = {
           company?: string
           created_at?: string
           description?: string | null
+          external_id?: string | null
           id?: string
           is_active?: boolean
           location?: string
           posted_at?: string
           salary?: string | null
           skills?: string[]
+          source?: string
           title?: string
           type?: string
         }
