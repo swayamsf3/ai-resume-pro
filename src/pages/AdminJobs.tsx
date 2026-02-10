@@ -14,7 +14,7 @@ import {
 import { Loader2, Play, Database, Activity, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 
-const ADMIN_EMAIL = "admin@swayam.com";
+const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
