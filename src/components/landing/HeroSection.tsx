@@ -26,9 +26,9 @@ const HeroSection = () => {
           y: 0
         }} transition={{
           duration: 0.5
-        }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 bg-card-foreground">
+         }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 bg-white/10">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary-foreground/90">
+            <span className="text-sm font-medium text-white/90">
               AI-Powered Resume Building
             </span>
           </motion.div>
@@ -43,7 +43,7 @@ const HeroSection = () => {
         }} transition={{
           duration: 0.5,
           delay: 0.1
-        }} className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground mb-6 leading-tight">
+        }} className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight">
             Build Your Dream Resume
             <br />
             <span className="text-gradient">Land Your Dream Job</span>
@@ -59,7 +59,7 @@ const HeroSection = () => {
         }} transition={{
           duration: 0.5,
           delay: 0.2
-        }} className="text-lg md:text-xl text-primary-foreground/70 mb-10 max-w-2xl mx-auto">
+        }} className="text-lg md:text-xl text-white/70 mb-10 max-w-2xl mx-auto">
             Create professional, ATS-optimized resumes in minutes with AI assistance. 
             Get personalized job recommendations matching your skills and experience.
           </motion.p>
@@ -83,7 +83,7 @@ const HeroSection = () => {
               </Button>
             </Link>
             <Link to="/jobs">
-              <Button variant="heroOutline" size="xl" className="gap-2 w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="heroOutline" size="xl" className="gap-2 w-full sm:w-auto">
                 <Briefcase className="w-5 h-5" />
                 Find Jobs
               </Button>
@@ -111,10 +111,10 @@ const HeroSection = () => {
             value: "500+",
             label: "Jobs Matched"
           }].map(stat => <div key={stat.label} className="text-center">
-                <div className="text-2xl md:text-3xl font-display font-bold text-primary-foreground">
+                <div className="text-2xl md:text-3xl font-display font-bold text-white">
                   {stat.value}
                 </div>
-                <div className="text-sm text-primary-foreground/60 mt-1">
+                <div className="text-sm text-white/60 mt-1">
                   {stat.label}
                 </div>
               </div>)}
