@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserResume } from "@/hooks/useUserResume";
+import { formatDistanceToNow } from "date-fns";
 import { 
   FileText, 
   Briefcase, 
@@ -10,21 +15,34 @@ import {
   Plus,
   Eye,
   Download,
-  Clock
+  Clock,
+  Loader2
 } from "lucide-react";
 
 const Dashboard = () => {
-  // Mock data - will be replaced with real user data
-  const stats = [
-    { label: "Resumes Created", value: "3", icon: FileText, color: "text-primary" },
-    { label: "Jobs Applied", value: "12", icon: Briefcase, color: "text-accent" },
-    { label: "Profile Views", value: "48", icon: TrendingUp, color: "text-green-500" },
-  ];
+  const { user } = useAuth();
+  const { userResume, skills, hasResume, isLoading: resumeLoading } = useUserResume();
 
-  const recentResumes = [
-    { id: 1, name: "Software Engineer Resume", updatedAt: "2 hours ago", views: 24 },
-    { id: 2, name: "Frontend Developer Resume", updatedAt: "1 day ago", views: 15 },
-    { id: 3, name: "Full Stack Resume", updatedAt: "3 days ago", views: 32 },
+  const { data: savedJobsCount = 0, isLoading: savedLoading } = useQuery({
+    queryKey: ["saved-jobs-count", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count, error } = await supabase
+        .from("saved_jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
+  const isLoading = resumeLoading || savedLoading;
+
+  const stats = [
+    { label: "Skills Detected", value: String(skills.length), icon: FileText, color: "text-primary" },
+    { label: "Jobs Saved", value: String(savedJobsCount), icon: Briefcase, color: "text-accent" },
+    { label: "Resume Source", value: hasResume ? (userResume?.source === "builder" ? "Builder" : "Upload") : "None", icon: TrendingUp, color: "text-green-500" },
   ];
 
   return (
@@ -61,7 +79,7 @@ const Dashboard = () => {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
                         <p className="text-3xl font-display font-bold text-foreground">
-                          {stat.value}
+                          {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : stat.value}
                         </p>
                       </div>
                       <div className={`w-12 h-12 rounded-xl bg-muted flex items-center justify-center ${stat.color}`}>
@@ -76,7 +94,7 @@ const Dashboard = () => {
 
           {/* Main Content Grid */}
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Recent Resumes */}
+            {/* Resume Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -84,50 +102,76 @@ const Dashboard = () => {
             >
               <Card className="border-border">
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="font-display text-xl">My Resumes</CardTitle>
+                  <CardTitle className="font-display text-xl">My Resume</CardTitle>
                   <Link to="/builder">
                     <Button variant="default" size="sm" className="gap-2">
                       <Plus className="w-4 h-4" />
-                      Create New
+                      {hasResume ? "Edit" : "Create"}
                     </Button>
                   </Link>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recentResumes.map((resume) => (
-                      <div
-                        key={resume.id}
-                        className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors group"
-                      >
+                  {resumeLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : hasResume ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
                             <FileText className="w-5 h-5 text-primary-foreground" />
                           </div>
                           <div>
-                            <p className="font-medium text-foreground">{resume.name}</p>
+                            <p className="font-medium text-foreground">
+                              {userResume?.resume_file_name || "Skills Profile"}
+                            </p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {resume.updatedAt}
+                                {userResume?.updated_at
+                                  ? formatDistanceToNow(new Date(userResume.updated_at), { addSuffix: true })
+                                  : "Recently"}
                               </span>
                               <span className="flex items-center gap-1">
-                                <Eye className="w-3 h-3" />
-                                {resume.views} views
+                                <TrendingUp className="w-3 h-3" />
+                                {skills.length} skills
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </div>
                       </div>
-                    ))}
-                  </div>
+                      {/* Top skills preview */}
+                      {skills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {skills.slice(0, 8).map((skill) => (
+                            <span
+                              key={skill}
+                              className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {skills.length > 8 && (
+                            <span className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground text-xs">
+                              +{skills.length - 8} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground mb-4">No resume yet. Create one to get started!</p>
+                      <Link to="/builder">
+                        <Button variant="default" size="sm" className="gap-2">
+                          <Plus className="w-4 h-4" />
+                          Create Resume
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -179,21 +223,23 @@ const Dashboard = () => {
                     </div>
                   </Link>
 
-                  <div className="p-4 rounded-xl border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-all cursor-pointer group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                        <TrendingUp className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground group-hover:text-green-600 transition-colors">
-                          Improve Profile
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Get tips to enhance your profile visibility
-                        </p>
+                  <Link to="/profile" className="block">
+                    <div className="p-4 rounded-xl border border-border hover:border-green-500/50 hover:bg-green-500/5 transition-all cursor-pointer group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                          <TrendingUp className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground group-hover:text-green-600 transition-colors">
+                            Edit Profile
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Update your name, email, and account settings
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </CardContent>
               </Card>
             </motion.div>
