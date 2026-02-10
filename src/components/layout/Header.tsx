@@ -1,15 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Briefcase, User, Menu, X, LogOut, Settings, Shield } from "lucide-react";
+import { FileText, Briefcase, User, Menu, X, LogOut, Settings, Shield, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "next-themes";
 const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 
 const Header = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
   const isAdmin = user?.email === ADMIN_EMAIL;
   const navLinks = [{
     path: "/",
@@ -50,6 +52,16 @@ const Header = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 relative"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              <Sun className="w-4 h-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+            </Button>
             {user ? (
               <>
                 <Link to="/dashboard">
@@ -112,6 +124,14 @@ const Header = () => {
                     {link.label}
                   </Button>
                 </Link>)}
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </Button>
               <div className="border-t border-border my-2" />
               {user ? (
                 <>
