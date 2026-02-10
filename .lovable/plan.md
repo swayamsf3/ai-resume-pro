@@ -1,77 +1,89 @@
 
 
-# Simplified Job Ingestion from Mock Employer Feeds
+# Admin Dashboard for Job Ingestion Management
 
 ## Overview
 
-Create a lightweight Edge Function that fetches job listings from 1-2 mock JSON feeds, normalizes them, and upserts into the `jobs` table. The mock feeds will be embedded as fallback test data within the function itself, simulating what real employer ATS endpoints would return.
+Create a new `/admin/jobs` page that displays all jobs (active and inactive), shows source/status info, and lets an admin manually trigger the `ingest-jobs` Edge Function. Access is restricted by a frontend check against a predefined admin email -- no RLS changes needed.
 
-## Database Changes
+## Access Control
 
-Add two columns to the `jobs` table:
+The admin page will check the logged-in user's email against a hardcoded admin email (`admin@swayam.com`). If the email does not match, the user is redirected away (e.g., to `/dashboard`). This is a simple frontend guard -- the existing RLS policy on the `jobs` table remains unchanged, meaning the admin page will only display active jobs (same as regular users). This is acceptable for the current scope since the primary value of the admin page is the ingestion trigger and source visibility.
 
-| Column | Type | Default | Purpose |
-|--------|------|---------|---------|
-| `source` | text | `'manual'` | Tracks origin: `manual` or `employer_feed` |
-| `external_id` | text, nullable | null | Deduplication key from feeds |
+A constant will be defined in the admin page:
 
-A partial unique index on `external_id` (where not null) enables upsert logic without affecting existing manual jobs.
-
-## New Edge Function: `ingest-jobs`
-
-A single file at `supabase/functions/ingest-jobs/index.ts` that:
-
-1. Defines 2 mock feed configurations with embedded sample job data (simulating JSON API responses from "TechCorp" and "DataWorks")
-2. Attempts to fetch each feed URL -- if the URL is unreachable, falls back to the embedded mock data
-3. Normalizes each job record into the `jobs` table schema
-4. Upserts using `external_id` for deduplication (new jobs are inserted, existing ones updated)
-5. Deactivates stale jobs from that feed source that are no longer in the current batch
-
-### Mock Feed Data (Embedded)
-
-Two simulated employers, each providing 3-4 jobs:
-
-**TechCorp** -- Web development roles:
-- Senior React Developer (React, TypeScript, Node.js)
-- Full Stack Engineer (Python, Django, PostgreSQL)
-- DevOps Engineer (AWS, Docker, Kubernetes)
-
-**DataWorks** -- Data/ML roles:
-- Data Scientist (Python, SQL, Machine Learning)
-- Backend Engineer (Go, PostgreSQL, REST)
-- Cloud Architect (AWS, Azure, Terraform)
-
-### Security
-
-The endpoint requires an `INGEST_SECRET` passed via the `x-ingest-key` header. This secret will need to be added to the project's Edge Function secrets.
-
-### Scalability
-
-The feed configuration array is designed so adding new employers in the future is as simple as appending another object with the feed URL and field mapping. The core parsing and upsert logic stays the same.
-
-## Config Update
-
-Add to `supabase/config.toml`:
+```typescript
+const ADMIN_EMAIL = "admin@swayam.com";
 ```
-[functions.ingest-jobs]
-verify_jwt = false
+
+## New Files
+
+### 1. `src/pages/AdminJobs.tsx`
+
+The admin dashboard page with:
+
+**Access guard** -- Checks `user.email === ADMIN_EMAIL`. If not, redirects to `/dashboard` with a toast message.
+
+**Stats bar** -- Cards showing:
+- Total jobs count
+- Jobs by source (manual vs employer_feed)
+- Active vs inactive count (based on visible data)
+
+**Ingestion trigger section** -- Contains:
+- A text input for the INGEST_SECRET value (stored in component state only, never persisted)
+- A "Run Ingestion" button that POSTs to the `ingest-jobs` Edge Function with the `x-ingest-key` header
+- Loading state and success/error feedback via toast
+- Auto-refetch of jobs list after successful run
+
+**Jobs table** -- Sortable table with columns:
+- Title
+- Company
+- Location
+- Source (badge: "manual" or "employer_feed")
+- External ID
+- Status (active/inactive badge)
+- Posted date
+
+Uses existing UI components: Card, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Button, Input.
+
+### 2. `src/hooks/useAdminJobs.ts`
+
+Custom hook using TanStack Query:
+- `useQuery` to fetch jobs from the `jobs` table (ordered by `created_at` desc)
+- A mutation function that calls the Edge Function URL (`https://qswjxgjfynphxvobaitl.supabase.co/functions/v1/ingest-jobs`) with the provided secret
+- Invalidates the jobs query on successful ingestion
+
+## Modified Files
+
+### 3. `src/App.tsx`
+
+Add a new route:
 ```
+<Route path="/admin/jobs" element={<ProtectedRoute><AdminJobs /></ProtectedRoute>} />
+```
+
+### 4. `src/components/layout/Header.tsx`
+
+Add an "Admin" navigation link to `/admin/jobs`, visible only when the logged-in user's email matches `ADMIN_EMAIL`. Added to both desktop and mobile navigation sections.
+
+## What Does NOT Change
+
+- No database migrations
+- No RLS policy changes -- the existing policy ("Authenticated users can view active jobs") stays as-is
+- No changes to `match-jobs`, `ingest-jobs`, or any other Edge Function
+- No changes to the Jobs page or any other existing page
+- Regular users continue to see only active jobs everywhere
 
 ## Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| SQL Migration | New | Add `source` and `external_id` columns |
-| `supabase/functions/ingest-jobs/index.ts` | New | Ingestion function with mock feeds |
-| `supabase/config.toml` | Modify | Register new function |
+| `src/pages/AdminJobs.tsx` | New | Admin dashboard with stats, table, and ingestion trigger |
+| `src/hooks/useAdminJobs.ts` | New | TanStack Query hook for admin job data |
+| `src/App.tsx` | Modify | Add `/admin/jobs` route |
+| `src/components/layout/Header.tsx` | Modify | Add conditional Admin nav link |
 
-## Secret Required
+## Note on Data Visibility
 
-An `INGEST_SECRET` secret must be added before calling the function. You will be prompted to set this value during implementation.
-
-## What Stays the Same
-
-- `match-jobs` function is unchanged (reads `is_active = true` jobs)
-- Frontend Jobs page is unchanged
-- All existing manually-seeded jobs remain untouched (`source = 'manual'`, `external_id = null`)
+Since the existing RLS policy only returns `is_active = true` jobs, the admin table will show active jobs only. Inactive (deactivated) jobs will not appear. If full visibility into inactive jobs is needed later, a dedicated RLS policy or a server-side admin endpoint can be added as a follow-up.
 
