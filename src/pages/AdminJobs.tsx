@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 
 const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
@@ -21,6 +24,7 @@ const AdminJobs = () => {
   const navigate = useNavigate();
   const { jobsQuery, ingestMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
 
   useEffect(() => {
     if (!authLoading && user?.email !== ADMIN_EMAIL) {
@@ -33,10 +37,18 @@ const AdminJobs = () => {
     const jobs = jobsQuery.data ?? [];
     const manual = jobs.filter((j) => j.source === "manual").length;
     const feed = jobs.filter((j) => j.source === "employer_feed").length;
+    const realApi = jobs.filter((j) => j.source === "adzuna" || j.source === "themuse").length;
     const active = jobs.filter((j) => j.is_active).length;
     const inactive = jobs.length - active;
-    return { total: jobs.length, manual, feed, active, inactive };
+    return { total: jobs.length, manual, feed, realApi, active, inactive };
   }, [jobsQuery.data]);
+
+  const filteredJobs = useMemo(() => {
+    const jobs = jobsQuery.data ?? [];
+    if (sourceFilter === "all") return jobs;
+    if (sourceFilter === "real_api") return jobs.filter((j) => j.source === "adzuna" || j.source === "themuse");
+    return jobs.filter((j) => j.source === sourceFilter);
+  }, [jobsQuery.data, sourceFilter]);
 
   if (authLoading || user?.email !== ADMIN_EMAIL) return null;
 
@@ -53,11 +65,12 @@ const AdminJobs = () => {
         </motion.h1>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
             { label: "Total Jobs", value: stats.total, icon: Database },
-            { label: "Manual", value: stats.manual, icon: Layers },
+            { label: "Real API", value: stats.realApi, icon: Globe },
             { label: "Employer Feed", value: stats.feed, icon: Activity },
+            { label: "Manual", value: stats.manual, icon: Layers },
             { label: "Active / Inactive", value: `${stats.active} / ${stats.inactive}`, icon: Activity },
           ].map((s) => (
             <Card key={s.label}>
@@ -98,8 +111,21 @@ const AdminJobs = () => {
 
         {/* Jobs Table */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-lg">Jobs</CardTitle>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="real_api">Real API (Adzuna + Muse)</SelectItem>
+                <SelectItem value="adzuna">Adzuna</SelectItem>
+                <SelectItem value="themuse">The Muse</SelectItem>
+                <SelectItem value="employer_feed">Employer Feed</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+              </SelectContent>
+            </Select>
           </CardHeader>
           <CardContent>
             {jobsQuery.isLoading ? (
@@ -120,13 +146,19 @@ const AdminJobs = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(jobsQuery.data ?? []).map((job) => (
+                  {filteredJobs.map((job) => (
                     <TableRow key={job.id}>
                       <TableCell className="font-medium">{job.title}</TableCell>
                       <TableCell>{job.company}</TableCell>
                       <TableCell className="hidden md:table-cell">{job.location}</TableCell>
                       <TableCell>
-                        <Badge variant={job.source === "manual" ? "secondary" : "default"}>
+                        <Badge variant={
+                          job.source === "adzuna" || job.source === "themuse"
+                            ? "default"
+                            : job.source === "manual"
+                            ? "secondary"
+                            : "outline"
+                        }>
                           {job.source}
                         </Badge>
                       </TableCell>

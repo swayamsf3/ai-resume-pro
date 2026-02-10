@@ -33,7 +33,15 @@ export const useAdminJobs = () => {
       return res.json();
     },
     onSuccess: (data) => {
-      toast({ title: "Ingestion complete", description: `Inserted: ${data.inserted}, Updated: ${data.updated}, Deactivated: ${data.deactivated}` });
+      const results = data.results as Record<string, { upserted: number; deactivated: number }> | undefined;
+      let description = "Ingestion completed successfully.";
+      if (results) {
+        const lines = Object.entries(results).map(
+          ([source, stats]) => `${source}: ${stats.upserted} upserted, ${stats.deactivated} deactivated`
+        );
+        description = lines.join("\n");
+      }
+      toast({ title: "Ingestion complete", description });
       queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
     },
     onError: (err: Error) => {

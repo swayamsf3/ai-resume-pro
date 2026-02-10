@@ -23,7 +23,7 @@ interface FeedJob {
 
 interface FeedConfig {
   name: string;
-  url: string; // real endpoint – falls back to mockData when unreachable
+  url: string;
   mockData: FeedJob[];
 }
 
@@ -79,13 +79,7 @@ const FEEDS: FeedConfig[] = [
         salary: "$130,000 - $170,000",
         description:
           "Apply statistical modeling and machine learning techniques to solve business problems. Collaborate with engineering to productionize models.",
-        required_skills: [
-          "Python",
-          "SQL",
-          "Machine Learning",
-          "Pandas",
-          "Scikit-learn",
-        ],
+        required_skills: ["Python", "SQL", "Machine Learning", "Pandas", "Scikit-learn"],
         application_url: "https://dataworks.example.com/careers/dw-001",
       },
       {
@@ -310,7 +304,152 @@ const FEEDS: FeedConfig[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Skills keyword list for extracting from descriptions
+// ---------------------------------------------------------------------------
+const SKILLS_KEYWORDS = [
+  "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Rust", "Ruby",
+  "Swift", "Kotlin", "PHP", "Scala", "R", "SQL", "NoSQL", "GraphQL", "REST",
+  "React", "Angular", "Vue", "Node.js", "Django", "Flask", "Spring", "Express",
+  "Next.js", "Svelte", "Redux", "TailwindCSS", "Bootstrap",
+  "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Terraform", "CI/CD",
+  "PostgreSQL", "MongoDB", "Redis", "Elasticsearch", "MySQL", "DynamoDB",
+  "Machine Learning", "Deep Learning", "NLP", "Computer Vision", "TensorFlow", "PyTorch",
+  "Git", "Linux", "Agile", "Scrum", "DevOps", "Microservices",
+  "HTML", "CSS", "Sass", "Figma", "UI/UX", "Accessibility",
+  "Data Science", "Data Engineering", "ETL", "Spark", "Hadoop",
+  "Cybersecurity", "Networking", "Blockchain", "IoT",
+];
+
+function extractSkillsFromText(text: string): string[] {
+  if (!text) return [];
+  const lower = text.toLowerCase();
+  return SKILLS_KEYWORDS.filter((skill) => lower.includes(skill.toLowerCase()));
+}
+
+// ---------------------------------------------------------------------------
+// Adzuna API fetcher
+// ---------------------------------------------------------------------------
+interface NormalizedJob {
+  title: string;
+  company: string;
+  location: string;
+  type: string;
+  salary: string | null;
+  description: string | null;
+  skills: string[];
+  apply_url: string;
+  external_id: string;
+  source: string;
+  is_active: boolean;
+  posted_at: string;
+}
+
+const ADZUNA_CATEGORIES = ["it-jobs", "engineering-jobs", "finance-jobs"];
+
+async function fetchAdzunaJobs(): Promise<NormalizedJob[]> {
+  const appId = Deno.env.get("ADZUNA_APP_ID");
+  const appKey = Deno.env.get("ADZUNA_APP_KEY");
+  if (!appId || !appKey) {
+    console.log("Adzuna credentials not configured – skipping");
+    return [];
+  }
+
+  const allJobs: NormalizedJob[] = [];
+
+  for (const category of ADZUNA_CATEGORIES) {
+    try {
+      const url = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=50&category=${category}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        console.error(`Adzuna ${category} error: HTTP ${res.status}`);
+        continue;
+      }
+      const data = await res.json();
+      const results = data.results ?? [];
+
+      for (const job of results) {
+        const salaryParts: string[] = [];
+        if (job.salary_min) salaryParts.push(`$${Math.round(job.salary_min).toLocaleString()}`);
+        if (job.salary_max) salaryParts.push(`$${Math.round(job.salary_max).toLocaleString()}`);
+        const salary = salaryParts.length === 2 ? salaryParts.join(" - ") : salaryParts[0] || null;
+
+        allJobs.push({
+          title: job.title ?? "Untitled",
+          company: job.company?.display_name ?? "Unknown",
+          location: job.location?.display_name ?? "Unknown",
+          type: job.contract_time === "part_time" ? "Part-time" : "Full-time",
+          salary,
+          description: job.description ?? null,
+          skills: extractSkillsFromText(job.description ?? ""),
+          apply_url: job.redirect_url ?? `https://www.adzuna.com/details/${job.id}`,
+          external_id: `adzuna_${job.id}`,
+          source: "adzuna",
+          is_active: true,
+          posted_at: job.created ? new Date(job.created).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      console.log(`Adzuna ${category}: fetched ${results.length} jobs`);
+    } catch (err) {
+      console.error(`Adzuna ${category} fetch error:`, err);
+    }
+  }
+
+  return allJobs;
+}
+
+// ---------------------------------------------------------------------------
+// The Muse API fetcher
+// ---------------------------------------------------------------------------
+
+async function fetchMuseJobs(): Promise<NormalizedJob[]> {
+  const allJobs: NormalizedJob[] = [];
+
+  for (let page = 0; page < 2; page++) {
+    try {
+      const url = `https://www.themuse.com/api/public/jobs?page=${page}&descending=true`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        console.error(`The Muse page ${page} error: HTTP ${res.status}`);
+        continue;
+      }
+      const data = await res.json();
+      const results = data.results ?? [];
+
+      for (const job of results) {
+        const categories = (job.categories ?? []).map((c: { name: string }) => c.name);
+        const levels = (job.levels ?? []).map((l: { name: string }) => l.name);
+        const skills = [...new Set([...categories, ...levels])].slice(0, 5);
+
+        allJobs.push({
+          title: job.name ?? "Untitled",
+          company: job.company?.name ?? "Unknown",
+          location: job.locations?.[0]?.name ?? "Remote",
+          type: "Full-time",
+          salary: null,
+          description: job.contents ? job.contents.replace(/<[^>]*>/g, "").slice(0, 2000) : null,
+          skills,
+          apply_url: job.refs?.landing_page ?? `https://www.themuse.com/jobs/${job.id}`,
+          external_id: `themuse_${job.id}`,
+          source: "themuse",
+          is_active: true,
+          posted_at: job.publication_date ? new Date(job.publication_date).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      console.log(`The Muse page ${page}: fetched ${results.length} jobs`);
+      // Small delay between pages to be respectful
+      if (page < 1) await new Promise((r) => setTimeout(r, 500));
+    } catch (err) {
+      console.error(`The Muse page ${page} fetch error:`, err);
+    }
+  }
+
+  return allJobs;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers (mock feeds)
 // ---------------------------------------------------------------------------
 
 async function fetchFeedJobs(feed: FeedConfig): Promise<FeedJob[]> {
@@ -318,7 +457,6 @@ async function fetchFeedJobs(feed: FeedConfig): Promise<FeedJob[]> {
     const res = await fetch(feed.url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    // Accept either a raw array or { jobs: [...] }
     return Array.isArray(data) ? data : data.jobs ?? [];
   } catch {
     console.log(
@@ -328,10 +466,7 @@ async function fetchFeedJobs(feed: FeedConfig): Promise<FeedJob[]> {
   }
 }
 
-function normalizeJob(
-  feedName: string,
-  raw: FeedJob
-): Record<string, unknown> {
+function normalizeJob(feedName: string, raw: FeedJob): NormalizedJob {
   return {
     title: raw.job_title,
     company: feedName,
@@ -349,6 +484,58 @@ function normalizeJob(
 }
 
 // ---------------------------------------------------------------------------
+// Upsert + deactivate helper
+// ---------------------------------------------------------------------------
+
+async function upsertAndDeactivate(
+  supabase: ReturnType<typeof createClient>,
+  source: string,
+  jobs: NormalizedJob[],
+  label: string
+): Promise<{ upserted: number; deactivated: number }> {
+  if (jobs.length === 0) return { upserted: 0, deactivated: 0 };
+
+  const { error: upsertError } = await supabase
+    .from("jobs")
+    .upsert(jobs, { onConflict: "external_id" });
+
+  if (upsertError) {
+    console.error(`Upsert error for ${label}:`, upsertError);
+    throw upsertError;
+  }
+
+  const currentExternalIds = jobs.map((j) => j.external_id);
+
+  const { data: staleJobs, error: staleError } = await supabase
+    .from("jobs")
+    .select("id, external_id")
+    .eq("source", source)
+    .eq("is_active", true)
+    .not("external_id", "in", `(${currentExternalIds.join(",")})`);
+
+  if (staleError) {
+    console.error(`Stale query error for ${label}:`, staleError);
+  }
+
+  let deactivated = 0;
+  if (staleJobs && staleJobs.length > 0) {
+    const staleIds = staleJobs.map((j) => j.id);
+    const { error: deactivateError } = await supabase
+      .from("jobs")
+      .update({ is_active: false })
+      .in("id", staleIds);
+
+    if (deactivateError) {
+      console.error(`Deactivate error for ${label}:`, deactivateError);
+    } else {
+      deactivated = staleIds.length;
+    }
+  }
+
+  return { upserted: jobs.length, deactivated };
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -357,7 +544,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Auth check
   const INGEST_SECRET = Deno.env.get("INGEST_SECRET");
   if (!INGEST_SECRET || req.headers.get("x-ingest-key") !== INGEST_SECRET) {
     return new Response(
@@ -373,6 +559,26 @@ Deno.serve(async (req) => {
 
     const results: Record<string, { upserted: number; deactivated: number }> = {};
 
+    // 1. Fetch from real APIs (Adzuna + The Muse) in parallel
+    const [adzunaJobs, museJobs] = await Promise.all([
+      fetchAdzunaJobs(),
+      fetchMuseJobs(),
+    ]);
+
+    // 2. Upsert real API jobs
+    if (adzunaJobs.length > 0) {
+      results["Adzuna"] = await upsertAndDeactivate(supabase, "adzuna", adzunaJobs, "Adzuna");
+    } else {
+      results["Adzuna"] = { upserted: 0, deactivated: 0 };
+    }
+
+    if (museJobs.length > 0) {
+      results["The Muse"] = await upsertAndDeactivate(supabase, "themuse", museJobs, "The Muse");
+    } else {
+      results["The Muse"] = { upserted: 0, deactivated: 0 };
+    }
+
+    // 3. Process mock feeds (fallback data)
     for (const feed of FEEDS) {
       const rawJobs = await fetchFeedJobs(feed);
       const normalized = rawJobs.map((j) => normalizeJob(feed.name, j));
@@ -382,7 +588,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Upsert jobs using external_id for deduplication
+      // For mock feeds, deactivate by company name within employer_feed source
       const { error: upsertError } = await supabase
         .from("jobs")
         .upsert(normalized, { onConflict: "external_id" });
@@ -392,9 +598,7 @@ Deno.serve(async (req) => {
         throw upsertError;
       }
 
-      // Deactivate stale jobs from this feed that weren't in the current batch
-      const currentExternalIds = normalized.map((j) => j.external_id as string);
-
+      const currentExternalIds = normalized.map((j) => j.external_id);
       const { data: staleJobs, error: staleError } = await supabase
         .from("jobs")
         .select("id, external_id")
@@ -403,9 +607,7 @@ Deno.serve(async (req) => {
         .eq("is_active", true)
         .not("external_id", "in", `(${currentExternalIds.join(",")})`);
 
-      if (staleError) {
-        console.error(`Stale query error for ${feed.name}:`, staleError);
-      }
+      if (staleError) console.error(`Stale query error for ${feed.name}:`, staleError);
 
       let deactivated = 0;
       if (staleJobs && staleJobs.length > 0) {
@@ -414,12 +616,8 @@ Deno.serve(async (req) => {
           .from("jobs")
           .update({ is_active: false })
           .in("id", staleIds);
-
-        if (deactivateError) {
-          console.error(`Deactivate error for ${feed.name}:`, deactivateError);
-        } else {
-          deactivated = staleIds.length;
-        }
+        if (deactivateError) console.error(`Deactivate error for ${feed.name}:`, deactivateError);
+        else deactivated = staleIds.length;
       }
 
       results[feed.name] = { upserted: normalized.length, deactivated };
