@@ -77,10 +77,9 @@
      throw new Error(`Failed to download file: ${error.message}`);
    }
  
-   // For now, we'll extract text content directly
-   // In a production environment, you'd use proper PDF/DOCX parsing libraries
-   const text = await data.text();
-   return text;
+    // Extract text and strip null bytes that PostgreSQL cannot store
+    const text = await data.text();
+    return text.replace(/\0/g, "");
  }
  
  Deno.serve(async (req) => {
