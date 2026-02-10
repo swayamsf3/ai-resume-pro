@@ -4,7 +4,7 @@ import { FileText, Briefcase, User, Menu, X, LogOut, Settings, Shield } from "lu
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-const ADMIN_EMAIL = "admin@swayam.com";
+const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 
 const Header = () => {
   const location = useLocation();
