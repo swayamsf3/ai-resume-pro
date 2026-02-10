@@ -1,52 +1,48 @@
 
 
-# Fix Dark Mode Visibility Issues
+# Add More Employer Job Feeds
 
-## Problem
+## Overview
 
-The Hero section and CTA section always use dark gradient backgrounds (`bg-gradient-hero`). They rely on `text-primary-foreground` for text color, which works in light mode (light cream) but breaks in dark mode because `--primary-foreground` becomes a very dark brown -- invisible on dark backgrounds.
+Expand the `ingest-jobs` Edge Function from 2 mock feeds (6 jobs) to 7 feeds (21+ jobs) covering diverse industries and roles, providing a much richer job browsing experience.
 
-Additionally, the Hero badge uses `bg-card-foreground` which becomes white in dark mode, creating a jarring look.
+## New Feeds to Add
 
-## Root Cause
+| Employer | Industry | Jobs | Roles |
+|----------|----------|------|-------|
+| TechCorp | Tech (existing) | 3 | React Dev, Full Stack, DevOps |
+| DataWorks | Data/Cloud (existing) | 3 | Data Scientist, Backend, Cloud Architect |
+| DesignHub | Design/Creative | 3 | UI/UX Designer, Product Designer, Frontend Developer |
+| FinanceFirst | Finance/Fintech | 3 | Quantitative Analyst, Security Engineer, Full Stack (Fintech) |
+| HealthTech Solutions | Healthcare Tech | 3 | ML Engineer (Healthcare), Backend Engineer, Mobile Developer |
+| GreenEnergy Co | Clean Energy | 3 | Embedded Systems Engineer, Data Analyst, Platform Engineer |
+| MediaStack | Media/Entertainment | 3 | Video Streaming Engineer, Content Platform Developer, QA Automation Engineer |
 
-These sections have **fixed dark backgrounds** regardless of theme, so they need **fixed light text** -- not theme-aware text tokens that flip.
+## Total: 21 jobs across 7 feeds
 
-## Changes
+## Technical Details
 
-### 1. `src/components/landing/HeroSection.tsx`
+### File Modified
 
-Replace theme-dependent text classes with fixed light colors:
+**`supabase/functions/ingest-jobs/index.ts`** -- append 5 new `FeedConfig` entries to the `FEEDS` array, each with:
+- A unique `name` and placeholder `url`
+- 3 mock jobs with realistic titles, locations (mix of on-site, remote, hybrid), salary ranges, detailed descriptions, and relevant skill arrays
+- Unique `job_id` prefixes per feed (e.g., `dh-001`, `ff-001`, `ht-001`, `ge-001`, `ms-001`)
 
-- `text-primary-foreground` --> `text-white`
-- `text-primary-foreground/90` --> `text-white/90`
-- `text-primary-foreground/70` --> `text-white/70`
-- `text-primary-foreground/60` --> `text-white/60`
-- Badge: change `bg-card-foreground` to `bg-white/10` for a consistent glass-like look
+### Skill Diversity
 
-### 2. `src/components/landing/CTASection.tsx`
+The new feeds will introduce skills not currently covered, improving the matching algorithm's usefulness:
+- **Design**: Figma, Sketch, Adobe XD, User Research, Design Systems, Accessibility
+- **Finance**: Python, R, Quantitative Modeling, Cybersecurity, SOC2, Penetration Testing
+- **Healthcare**: TensorFlow, PyTorch, HIPAA, FHIR, React Native, Swift, Kotlin
+- **Energy**: C, C++, RTOS, Embedded Linux, Tableau, Power BI, ETL
+- **Media**: FFmpeg, WebRTC, HLS, Elasticsearch, Cypress, Selenium, k6
 
-Same approach -- replace theme-dependent text with fixed colors:
+### No Schema Changes
 
-- `text-primary-foreground` --> `text-white`
-- `text-primary-foreground/90` --> `text-white/90`
-- `text-primary-foreground/70` --> `text-white/70`
-- `text-primary-foreground/50` --> `text-white/50`
+The existing `jobs` table schema supports all new data. No migrations needed.
 
-### 3. `src/components/landing/HowItWorksSection.tsx`
+### No New Secrets
 
-- Change `bg-secondary/30` to `bg-muted/30` for better contrast in dark mode (secondary in dark mode is a medium gray that blends poorly)
-
-### 4. `src/components/ui/button.tsx`
-
-- Update `heroOutline` variant: change `text-primary` and border/hover classes to use `text-white border-white/30 hover:bg-white/10 hover:text-white` so the "Find Jobs" button in the hero is visible in dark mode
-
-## Files Summary
-
-| File | Description |
-|------|-------------|
-| `src/components/landing/HeroSection.tsx` | Fix all text colors to use fixed `text-white` variants; fix badge background |
-| `src/components/landing/CTASection.tsx` | Fix all text colors to use fixed `text-white` variants |
-| `src/components/landing/HowItWorksSection.tsx` | Fix section background for dark mode contrast |
-| `src/components/ui/button.tsx` | Fix `heroOutline` variant for dark backgrounds |
+Mock feeds use the same fallback pattern as existing feeds -- no new API keys required.
 
