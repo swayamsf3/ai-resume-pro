@@ -102,7 +102,7 @@ const HeroSection = () => {
           delay: 0.4
         }} className="mt-16 grid grid-cols-3 gap-8 max-w-xl mx-auto">
             {[{
-            value: "10K+",
+            value: "1K+",
             label: "Resumes Created"
           }, {
             value: "95%",
