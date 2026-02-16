@@ -105,7 +105,7 @@ const HeroSection = () => {
             value: "1K+",
             label: "Resumes Created"
           }, {
-            value: "95%",
+            value: "90%",
             label: "Success Rate"
           }, {
             value: "500+",
