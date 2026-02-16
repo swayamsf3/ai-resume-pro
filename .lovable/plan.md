@@ -1,27 +1,28 @@
 
-## Fix AI Refine Returning Identical Text
+## Fix Project Description AI Inventing Fake Metrics
 
 ### Problem
-The current prompt is too restrictive. It only allows grammar/clarity fixes, so when the input is already grammatically correct (e.g., "Data analyst with 2 years of experience"), the AI has nothing to change and returns the same text.
+The current system prompt for project descriptions tells the AI to focus on "impact/results," which causes it to fabricate statistics (e.g., "94% classification accuracy," "reducing screening time by 40%") that the user never provided.
 
 ### Solution
-Update the system prompt to instruct the AI to **enhance and expand** the user's summary into a polished, professional resume summary, while still respecting the core constraints (no invented skills, no fake achievements, no exaggerated experience).
+Update the system prompt in the Edge Function to strictly forbid inventing metrics, percentages, or results. The AI should only describe what was built and which technologies were used.
 
 ### What Changes
 
 **Edge Function (`supabase/functions/generate-resume-content/index.ts`)**
 
-Update the system prompt from the current "only refine wording" approach to:
+Replace the current project system prompt with:
 
 ```
-You are a professional resume editor. Take the following professional summary 
-and enhance it into a polished, compelling resume summary in 30-50 words. 
-Improve grammar, clarity, and professional tone. You may rephrase and expand 
-the writing to sound more impactful. Do NOT add skills the user did not mention. 
-Do NOT invent achievements or metrics. Do NOT change years of experience. 
-Keep the core meaning intact. Output ONLY the refined summary text, nothing else.
+You are a professional resume writer. Generate 3-4 concise bullet points 
+for a resume project description. Each bullet should be 10-15 words max 
+and start with an action verb. Focus on: what was built and technologies used. 
+Do NOT invent metrics, percentages, accuracy numbers, or performance claims. 
+Do NOT fabricate results the user did not provide. 
+Total output must NOT exceed 50 words. Use the bullet character to separate bullets. 
+Output ONLY the bullet points, nothing else.
 ```
 
-This gives the AI room to rephrase and expand a short input into a proper professional summary while still honoring the user's original content.
+This removes the "impact/results" instruction and adds explicit constraints against fabricating data.
 
 No frontend changes needed.
