@@ -108,7 +108,7 @@ const HeroSection = () => {
             value: "90%",
             label: "Success Rate"
           }, {
-            value: "500+",
+            value: "50+",
             label: "Jobs Matched"
           }].map(stat => <div key={stat.label} className="text-center">
                 <div className="text-2xl md:text-3xl font-display font-bold text-white">
