@@ -202,6 +202,15 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   };
 
   const generateAISummary = async () => {
+    if (!resumeData.personalInfo.summary.trim()) {
+      toast({
+        title: "No Summary Found",
+        description: "Please write a summary first before refining.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGeneratingSummary(true);
     try {
       const response = await fetch(
@@ -212,12 +221,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
           body: JSON.stringify({
             type: "summary",
             data: {
-              fullName: resumeData.personalInfo.fullName,
-              skills: resumeData.skills,
-              experience: resumeData.experience.map(e => ({
-                position: e.position,
-                company: e.company
-              }))
+              summary: resumeData.personalInfo.summary
             }
           })
         }
@@ -226,13 +230,13 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
       const result = await response.json();
       
       if (!response.ok) {
-        throw new Error(result.error || "Failed to generate summary");
+        throw new Error(result.error || "Failed to refine summary");
       }
 
       updatePersonalInfo("summary", result.content);
       toast({
-        title: "Summary Generated!",
-        description: "Your professional summary has been created.",
+        title: "Summary Refined!",
+        description: "Your professional summary has been improved.",
       });
     } catch (error) {
       console.error("Error generating summary:", error);
@@ -405,7 +409,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                   className="gap-1 text-primary"
                 >
                   <Wand2 className="w-4 h-4" />
-                  {isGeneratingSummary ? "Generating..." : "AI Generate"}
+                  {isGeneratingSummary ? "Refining..." : "AI Refine"}
                 </Button>
               </div>
               <Textarea
