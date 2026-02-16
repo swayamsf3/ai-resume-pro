@@ -73,24 +73,24 @@ const Footer = () => {
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
-              >
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
+
                 <Github className="w-5 h-5" />
               </a>
               <a
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
-              >
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
+
                 <Twitter className="w-5 h-5" />
               </a>
               <a
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
-              >
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
+
                 <Linkedin className="w-5 h-5" />
               </a>
             </div>
@@ -102,12 +102,12 @@ const Footer = () => {
             © 2025 ResumeAI. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
-            Built with AI • Department of IT, HVPM COET
+               • Department of IT, HVPM COET
           </p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>);
+
 };
 
 export default Footer;
