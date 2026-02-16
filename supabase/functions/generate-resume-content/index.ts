@@ -51,7 +51,7 @@ serve(async (req) => {
 
     } else if (type === "project") {
       const projectData = data as ProjectData;
-      systemPrompt = `You are a professional resume writer. Generate 3-4 concise bullet points for a resume project description. Each bullet should be 10-15 words max and start with an action verb. Focus on: what was built, technologies used, impact/results. Total output must NOT exceed 50 words. Use • character to separate bullets. Output ONLY the bullet points, nothing else.`;
+      systemPrompt = `You are a professional resume writer. Generate 3-4 concise bullet points for a resume project description. Each bullet should be 10-15 words max and start with an action verb. Focus on: what was built and technologies used. Do NOT invent metrics, percentages, accuracy numbers, or performance claims. Do NOT fabricate results the user did not provide. Total output must NOT exceed 50 words. Use • character to separate bullets. Output ONLY the bullet points, nothing else.`;
       
       userPrompt = `Write bullet points for a resume project:
 Project Name: ${projectData.name || "Project"}
