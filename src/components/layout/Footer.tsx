@@ -12,8 +12,8 @@ const Footer = () => {
               <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
                 <FileText className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-display text-xl font-bold text-foreground">
-                ResumeAI
+              <span className="font-display text-xl font-bold text-foreground">Ai -Resume Builder
+
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -67,13 +67,13 @@ const Footer = () => {
 
           {/* Social */}
           <div>
-            <h4 className="font-display font-semibold text-foreground mb-4">Connect</h4>
+            <h4 className="font-display font-semibold text-foreground mb-4">
+            </h4>
             <div className="flex gap-3">
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
+              <a href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
 
                 <Github className="w-5 h-5" />
               </a>
@@ -99,7 +99,7 @@ const Footer = () => {
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 ResumeAI. All rights reserved.
+
           </p>
           <p className="text-sm text-muted-foreground">
                • Department of IT, HVPM COET
