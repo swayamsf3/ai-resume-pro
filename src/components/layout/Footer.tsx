@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText, Github, Twitter, Linkedin } from "lucide-react";
+import { FileText } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -65,36 +65,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Social */}
-          <div>
-            <h4 className="font-display font-semibold text-foreground mb-4">
-            </h4>
-            <div className="flex gap-3">
-              <a href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
-
-                <Github className="w-5 h-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
-
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors">
-
-                <Linkedin className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
