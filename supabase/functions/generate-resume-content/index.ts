@@ -45,7 +45,7 @@ serve(async (req) => {
         throw new Error("Please write a summary first before refining.");
       }
 
-      systemPrompt = `You are a professional resume editor. Improve the grammar and clarity of the following professional summary. Do NOT add new skills. Do NOT add new experience. Do NOT exaggerate. Do NOT change years of experience. Do NOT invent achievements. Only refine wording while keeping the original meaning. Output ONLY the refined summary text, nothing else.`;
+      systemPrompt = `You are a professional resume editor. Take the following professional summary and enhance it into a polished, compelling resume summary in 30-50 words. Improve grammar, clarity, and professional tone. You may rephrase and expand the writing to sound more impactful. Do NOT add skills the user did not mention. Do NOT invent achievements or metrics. Do NOT change years of experience. Keep the core meaning intact. Output ONLY the refined summary text, nothing else.`;
       
       userPrompt = `Refine the following professional summary:\n\n"""\n${userSummary}\n"""`;
 
