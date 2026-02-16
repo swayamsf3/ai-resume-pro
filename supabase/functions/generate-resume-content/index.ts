@@ -37,21 +37,17 @@ serve(async (req) => {
     let systemPrompt: string;
     let userPrompt: string;
 
-    if (type === "summary") {
+  if (type === "summary") {
       const summaryData = data as SummaryData;
-      systemPrompt = `You are a professional resume writer. Generate a compelling professional summary in EXACTLY 30-35 words. Be concise, impactful, and focus on value proposition. Do NOT use first person pronouns (I, me, my). Do NOT exceed 35 words. Output ONLY the summary text, nothing else.`;
+      const userSummary = (summaryData as any).summary as string;
       
-      const skillsList = summaryData.skills.length > 0 
-        ? summaryData.skills.slice(0, 5).join(", ") 
-        : "various technologies";
-      const experienceList = summaryData.experience.length > 0
-        ? summaryData.experience.map(e => `${e.position} at ${e.company}`).join("; ")
-        : "";
+      if (!userSummary || userSummary.trim().length === 0) {
+        throw new Error("Please write a summary first before refining.");
+      }
+
+      systemPrompt = `You are a professional resume editor. Improve the grammar and clarity of the following professional summary. Do NOT add new skills. Do NOT add new experience. Do NOT exaggerate. Do NOT change years of experience. Do NOT invent achievements. Only refine wording while keeping the original meaning. Output ONLY the refined summary text, nothing else.`;
       
-      userPrompt = `Write a professional resume summary for ${summaryData.fullName || "a professional"}.
-Skills: ${skillsList}
-${experienceList ? `Experience: ${experienceList}` : ""}
-Remember: 30-35 words maximum, no first person pronouns.`;
+      userPrompt = `Refine the following professional summary:\n\n"""\n${userSummary}\n"""`;
 
     } else if (type === "project") {
       const projectData = data as ProjectData;
