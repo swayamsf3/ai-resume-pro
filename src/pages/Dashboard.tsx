@@ -3,18 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserResume } from "@/hooks/useUserResume";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 import { 
   FileText, 
   Briefcase, 
   TrendingUp, 
   Plus,
-  Eye,
   Download,
+  Trash2,
   Clock,
   Loader2
 } from "lucide-react";
@@ -22,6 +23,7 @@ import {
 const Dashboard = () => {
   const { user } = useAuth();
   const { userResume, skills, hasResume, isLoading: resumeLoading } = useUserResume();
+  const queryClient = useQueryClient();
 
   const { data: savedJobsCount = 0, isLoading: savedLoading } = useQuery({
     queryKey: ["saved-jobs-count", user?.id],
@@ -36,6 +38,44 @@ const Dashboard = () => {
     },
     enabled: !!user,
   });
+
+  const { data: generatedResumes = [], isLoading: resumesLoading } = useQuery({
+    queryKey: ["generated-resumes", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase.storage
+        .from("generated-resumes")
+        .list(user.id, { sortBy: { column: "created_at", order: "desc" } });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const handleDownloadResume = async (fileName: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.storage
+      .from("generated-resumes")
+      .createSignedUrl(`${user.id}/${fileName}`, 60);
+    if (error || !data?.signedUrl) {
+      toast({ title: "Download failed", variant: "destructive" });
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const handleDeleteResume = async (fileName: string) => {
+    if (!user) return;
+    const { error } = await supabase.storage
+      .from("generated-resumes")
+      .remove([`${user.id}/${fileName}`]);
+    if (error) {
+      toast({ title: "Delete failed", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Resume deleted" });
+    queryClient.invalidateQueries({ queryKey: ["generated-resumes", user.id] });
+  };
 
   const isLoading = resumeLoading || savedLoading;
 
@@ -244,6 +284,74 @@ const Dashboard = () => {
               </Card>
             </motion.div>
           </div>
+
+          {/* Saved Generated Resumes */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8"
+          >
+            <Card className="border-border">
+              <CardHeader>
+                <CardTitle className="font-display text-xl">My Generated Resumes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {resumesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : generatedResumes.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-6">
+                    No generated resumes yet. Build a resume and download the PDF to save it here.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {generatedResumes.map((file) => (
+                      <div
+                        key={file.name}
+                        className="flex items-center justify-between p-3 rounded-xl bg-muted/50"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileText className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {file.name.replace(/^\d+_/, "")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {file.created_at
+                                ? formatDistanceToNow(new Date(file.created_at), { addSuffix: true })
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleDownloadResume(file.name)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteResume(file.name)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </main>
     </div>
