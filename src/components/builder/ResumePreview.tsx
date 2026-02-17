@@ -5,6 +5,8 @@ import { Download, Loader2 } from "lucide-react";
 import type { ResumeData } from "@/pages/Builder";
 import type { TemplateId } from "./templates/types";
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import ClassicTemplate from "./templates/ClassicTemplate";
 import ModernTemplate from "./templates/ModernTemplate";
 import MinimalTemplate from "./templates/MinimalTemplate";
@@ -26,6 +28,7 @@ const CONTENT_PADDING = 20; // Padding inside each page
 const USABLE_PAGE_HEIGHT = PAGE_HEIGHT_PX - (CONTENT_PADDING * 2); // 802px usable content height
 
 const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
+  const { user } = useAuth();
   const resumeRef = useRef<HTMLDivElement>(null);
   const contentMeasureRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -173,10 +176,32 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
 
       pdf.save(fileName);
 
-      toast({
-        title: "PDF Downloaded!",
-        description: `Your resume has been saved successfully (${pdfTotalPages} page${pdfTotalPages > 1 ? 's' : ''}).`,
-      });
+      // Upload to Supabase Storage in background
+      if (user) {
+        try {
+          const blob = pdf.output("blob");
+          const storagePath = `${user.id}/${Date.now()}_${fileName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("generated-resumes")
+            .upload(storagePath, blob, { contentType: "application/pdf" });
+          if (uploadError) throw uploadError;
+          toast({
+            title: "PDF Downloaded & Saved!",
+            description: `Your resume (${pdfTotalPages} page${pdfTotalPages > 1 ? 's' : ''}) has been downloaded and saved to your account.`,
+          });
+        } catch (uploadErr) {
+          console.error("Failed to upload PDF to storage:", uploadErr);
+          toast({
+            title: "PDF Downloaded!",
+            description: `Downloaded locally but failed to save to your account.`,
+          });
+        }
+      } else {
+        toast({
+          title: "PDF Downloaded!",
+          description: `Your resume has been saved successfully (${pdfTotalPages} page${pdfTotalPages > 1 ? 's' : ''}).`,
+        });
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast({
