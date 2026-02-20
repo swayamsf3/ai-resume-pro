@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   User, 
   Briefcase, 
@@ -23,6 +24,91 @@ import type { ResumeData } from "@/pages/Builder";
 import type { TemplateId } from "./templates/types";
 import { templates } from "./templates/types";
 import { toast } from "@/hooks/use-toast";
+
+const MONTHS = [
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
+
+interface MonthYearPickerProps {
+  value: string;
+  onChange: (value: string) => void;
+  max?: string;
+  min?: string;
+  disabled?: boolean;
+}
+
+const MonthYearPicker = ({ value, onChange, max, min, disabled }: MonthYearPickerProps) => {
+  const now = new Date();
+  const maxYear = max ? parseInt(max.split("-")[0]) : now.getFullYear();
+  const maxMonth = max ? parseInt(max.split("-")[1]) : now.getMonth() + 1;
+  const minYear = min ? parseInt(min.split("-")[0]) : 1970;
+  const minMonth = min ? parseInt(min.split("-")[1]) : 1;
+
+  const selectedYear = value ? value.split("-")[0] : "";
+  const selectedMonth = value ? value.split("-")[1] : "";
+
+  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => (maxYear - i).toString());
+
+  const getAvailableMonths = () => {
+    const yr = parseInt(selectedYear);
+    return MONTHS.filter((m) => {
+      const mv = parseInt(m.value);
+      if (yr === maxYear && mv > maxMonth) return false;
+      if (yr === minYear && mv < minMonth) return false;
+      return true;
+    });
+  };
+
+  const handleYearChange = (yr: string) => {
+    const mo = selectedMonth || "01";
+    const yrNum = parseInt(yr);
+    let moNum = parseInt(mo);
+    if (yrNum === maxYear && moNum > maxMonth) moNum = maxMonth;
+    if (yrNum === minYear && moNum < minMonth) moNum = minMonth;
+    onChange(`${yr}-${String(moNum).padStart(2, "0")}`);
+  };
+
+  const handleMonthChange = (mo: string) => {
+    const yr = selectedYear || maxYear.toString();
+    onChange(`${yr}-${mo}`);
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Select value={selectedMonth} onValueChange={handleMonthChange} disabled={disabled}>
+        <SelectTrigger className="flex-1">
+          <SelectValue placeholder="Month" />
+        </SelectTrigger>
+        <SelectContent>
+          {getAvailableMonths().map((m) => (
+            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={selectedYear} onValueChange={handleYearChange} disabled={disabled}>
+        <SelectTrigger className="w-[100px]">
+          <SelectValue placeholder="Year" />
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((yr) => (
+            <SelectItem key={yr} value={yr}>{yr}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
 
 const SUPABASE_URL = "https://qswjxgjfynphxvobaitl.supabase.co";
 
@@ -461,23 +547,20 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                     </div>
                     <div className="space-y-2">
                       <Label>Start Date</Label>
-                      <Input
-                        type="month"
-                        max={currentMonth}
+                      <MonthYearPicker
                         value={exp.startDate}
-                        onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)}
+                        onChange={(val) => updateExperience(exp.id, "startDate", val)}
+                        max={currentMonth}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>End Date</Label>
-                      <Input
-                        type="month"
+                      <MonthYearPicker
+                        value={exp.endDate}
+                        onChange={(val) => updateExperience(exp.id, "endDate", val)}
                         max={currentMonth}
                         min={exp.startDate}
-                        value={exp.endDate}
                         disabled={exp.current}
-                        placeholder={exp.current ? "Present" : ""}
-                        onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)}
                       />
                     </div>
                   </div>
@@ -552,21 +635,19 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                     </div>
                     <div className="space-y-2">
                       <Label>Start Date</Label>
-                      <Input
-                        type="month"
-                        max={currentMonth}
+                      <MonthYearPicker
                         value={edu.startDate}
-                        onChange={(e) => updateEducation(edu.id, "startDate", e.target.value)}
+                        onChange={(val) => updateEducation(edu.id, "startDate", val)}
+                        max={currentMonth}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>End Date</Label>
-                      <Input
-                        type="month"
+                      <MonthYearPicker
+                        value={edu.endDate}
+                        onChange={(val) => updateEducation(edu.id, "endDate", val)}
                         max={currentMonth}
                         min={edu.startDate}
-                        value={edu.endDate}
-                        onChange={(e) => updateEducation(edu.id, "endDate", e.target.value)}
                       />
                     </div>
                   </div>
@@ -723,11 +804,10 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                     </div>
                     <div className="space-y-2">
                       <Label>Date Obtained</Label>
-                      <Input
-                        type="month"
-                        max={currentMonth}
+                      <MonthYearPicker
                         value={cert.date}
-                        onChange={(e) => updateCertification(cert.id, "date", e.target.value)}
+                        onChange={(val) => updateCertification(cert.id, "date", val)}
+                        max={currentMonth}
                       />
                     </div>
                   </div>
