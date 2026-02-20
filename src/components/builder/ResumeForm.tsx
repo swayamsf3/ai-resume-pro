@@ -34,6 +34,8 @@ interface ResumeFormProps {
 }
 
 const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTemplate }: ResumeFormProps) => {
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const currentTemplate = templates.find(t => t.id === selectedTemplate);
   const [newSkill, setNewSkill] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -461,6 +463,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                       <Label>Start Date</Label>
                       <Input
                         type="month"
+                        max={currentMonth}
                         value={exp.startDate}
                         onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)}
                       />
@@ -469,6 +472,8 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                       <Label>End Date</Label>
                       <Input
                         type="month"
+                        max={currentMonth}
+                        min={exp.startDate}
                         value={exp.endDate}
                         disabled={exp.current}
                         placeholder={exp.current ? "Present" : ""}
@@ -549,6 +554,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                       <Label>Start Date</Label>
                       <Input
                         type="month"
+                        max={currentMonth}
                         value={edu.startDate}
                         onChange={(e) => updateEducation(edu.id, "startDate", e.target.value)}
                       />
@@ -557,6 +563,8 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                       <Label>End Date</Label>
                       <Input
                         type="month"
+                        max={currentMonth}
+                        min={edu.startDate}
                         value={edu.endDate}
                         onChange={(e) => updateEducation(edu.id, "endDate", e.target.value)}
                       />
@@ -717,6 +725,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                       <Label>Date Obtained</Label>
                       <Input
                         type="month"
+                        max={currentMonth}
                         value={cert.date}
                         onChange={(e) => updateCertification(cert.id, "date", e.target.value)}
                       />
