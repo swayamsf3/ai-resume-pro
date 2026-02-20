@@ -1,46 +1,61 @@
 
 
-## Improve AI Summary Quality for Short Inputs
+## Improve AI Project Description Output
 
 ### Problem
-When a user provides brief input like "software developer with 2 years of experience," the AI returns an equally brief, unhelpful summary because the prompt is too restrictive -- it forbids adding anything the user didn't mention, leaving the AI no room to elaborate.
+The project description prompt limits output to 3-4 bullets with a strict 50-word cap, producing thin, unhelpful descriptions.
 
 ### Solution
-Update the system prompt in `supabase/functions/generate-resume-content/index.ts` to:
-
-1. **Increase target word count** from 30-50 to 40-70 words for richer output
-2. **Encourage elaboration** -- tell the AI to infer and add relevant professional qualities, typical responsibilities, and strengths based on the role mentioned
-3. **Raise max_tokens** from 150 to 250 to allow longer responses
-4. **Keep guardrails** -- still no fabricated metrics, percentages, or specific achievements
+Update the project description system prompt and user prompt in `supabase/functions/generate-resume-content/index.ts` to allow richer output.
 
 ### What Changes
 
 **File:** `supabase/functions/generate-resume-content/index.ts`
 
-- Line 48: Replace the system prompt with a more descriptive one that encourages the AI to expand on minimal input by adding relevant professional qualities and typical responsibilities for the mentioned role
-- Line 80: Change `max_tokens` from `150` to `250`
-
-### Updated Prompt (line 48)
+**Line 54 -- System prompt**: Replace the current restrictive prompt with one that requests 4-6 detailed bullet points (15-25 words each), up to 120 words total. Encourage the AI to describe key features built, technical challenges addressed, architecture decisions, and user-facing impact -- while still not fabricating metrics.
 
 Replace:
 ```text
-You are a professional resume editor. Take the following professional summary and enhance it into a polished, compelling resume summary in 30-50 words. Improve grammar, clarity, and professional tone. You may rephrase and expand the writing to sound more impactful. Do NOT add skills the user did not mention. Do NOT invent achievements or metrics. Do NOT change years of experience. Keep the core meaning intact. Output ONLY the refined summary text, nothing else.
+You are a professional resume writer. Generate 3-4 concise bullet points for a resume project description. Each bullet should be 10-15 words max and start with an action verb. Focus on: what was built and technologies used. Do NOT invent metrics, percentages, accuracy numbers, or performance claims. Do NOT fabricate results the user did not provide. Total output must NOT exceed 50 words. Use . character to separate bullets. Output ONLY the bullet points, nothing else.
 ```
 
 With:
 ```text
-You are a professional resume writer. Take the user's input and craft a polished, compelling professional summary of 40-70 words. Expand on the input by adding relevant professional qualities, typical strengths, and common responsibilities associated with the mentioned role. Use confident, professional language. Highlight passion for the field, collaboration, problem-solving, and continuous learning where appropriate. Do NOT invent specific metrics, percentages, company names, or achievements. Do NOT change years of experience if mentioned. Output ONLY the summary text, nothing else.
+You are a professional resume writer. Generate 4-6 detailed bullet points for a resume project description. Each bullet should be 15-25 words and start with a strong action verb. Describe: what was built, key features implemented, technologies and tools used, architectural decisions, and the problem the project solves. Infer reasonable technical details based on the technologies mentioned. Do NOT invent specific metrics, percentages, or performance numbers. Total output should be 80-120 words. Use the . character to separate bullets. Output ONLY the bullet points, nothing else.
+```
+
+**Lines 56-59 -- User prompt**: Update to match the new expectations:
+
+Replace:
+```text
+Write bullet points for a resume project:
+Project Name: ${projectData.name || "Project"}
+Technologies: ${projectData.technologies || "modern technologies"}
+Remember: 3-4 bullets, action verbs, 50 words maximum total.
+```
+
+With:
+```text
+Write detailed bullet points for a resume project:
+Project Name: ${projectData.name || "Project"}
+Technologies: ${projectData.technologies || "modern technologies"}
+Remember: 4-6 bullets, strong action verbs, 80-120 words total. Be descriptive about features and technical implementation.
 ```
 
 ### Expected Result
 
-Input: "software developer with 2 years of experience"
+Before (example for "Portfolio Website" with "React, Tailwind"):
+- Built a portfolio website using React and Tailwind CSS
+- Implemented responsive design for mobile compatibility
+- Deployed application to production environment
 
-Before: "Results-driven software developer with 2 years of experience."
-
-After (example): "Dedicated software developer with 2 years of experience building and maintaining web applications. Passionate about writing clean, efficient code and collaborating with cross-functional teams to deliver high-quality solutions. Committed to continuous learning and staying current with emerging technologies to drive innovation and improve user experiences."
+After (example):
+- Designed and developed a responsive portfolio website using React and Tailwind CSS with component-based architecture
+- Implemented dynamic routing and smooth page transitions to enhance user navigation experience
+- Built reusable UI components with Tailwind utility classes for consistent styling across all pages
+- Integrated responsive design principles ensuring seamless display across desktop, tablet, and mobile devices
+- Optimized application performance through lazy loading and efficient state management patterns
 
 ### No other files change
-- Frontend code stays the same
-- Project description prompt stays the same
-- CORS, validation, error handling unchanged
+- max_tokens already set to 250 (sufficient for the new output length)
+- Frontend, CORS, error handling all unchanged
