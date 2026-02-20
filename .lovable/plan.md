@@ -1,79 +1,64 @@
 
+## Fix PDF Skill Extraction - Two Broken Steps
 
-## Move PDF Parsing to Frontend with pdfjs-dist and OCR Fallback
+### Root Cause Analysis
+1. **pdfjs-dist text extraction fails silently** -- the extracted text is less than 50 characters, triggering the OCR fallback
+2. **OCR fallback crashes** -- `tesseract.js` receives a PDF File directly, but it only accepts images (PNG/JPG). This causes `"Error attempting to read image"` and returns nothing
+3. Result: `text` stays empty, `extractSkillsFromText("")` returns 0 skills
 
-### Problem
-The current edge function downloads the PDF and calls `.text()` on the raw binary blob, which does not properly extract text from PDF files. PDFs have a complex binary structure that requires a dedicated parser.
+### Fixes
 
-### Solution
-Move text extraction to the frontend using `pdfjs-dist` (for normal PDFs) and `tesseract.js` (for scanned/image-based PDFs as fallback). Send the extracted text and skills directly to the backend instead of relying on server-side parsing.
+**1. `src/lib/pdfTextExtractor.ts` -- Harden PDF extraction**
+- Add `console.log` to show extracted text length for debugging
+- Add a try/catch around `getDocument` with a more descriptive error
+- Try using `useWorkerFetch: false` and `isEvalSupported: false` in the `getDocument` options to avoid worker/eval issues in the Lovable sandbox environment
 
-### New Files
+**2. `src/lib/ocrExtractor.ts` -- Fix: render PDF pages to canvas images first**
+- Import `pdfjs-dist` to render each page onto a canvas element
+- Convert each canvas to a Blob (PNG image)
+- Pass each page image to `tesseract.js` for recognition
+- Combine text from all pages
+- This fixes the "Error attempting to read image" crash
 
-**1. `src/lib/pdfTextExtractor.ts`** -- PDF text extraction utility
-- Import `pdfjs-dist` and configure `GlobalWorkerOptions.workerSrc` using the CDN URL matching the installed version (avoids bundler/CORS issues)
-- `extractTextFromPDF(file: File): Promise<string>` function that:
-  - Reads file as ArrayBuffer via FileReader (wrapped in a Promise)
-  - Loads the PDF document with `pdfjsLib.getDocument()`
-  - Loops through all pages, calls `page.getTextContent()`
-  - Combines all text items into a single string with newlines between pages
-- Returns the full extracted text
+**3. `src/lib/skillExtractor.ts` -- Add missing skills from your resume**
+- Add to whitelist: `"seaborn"`, `"opencv"`, `"jupyter notebook"`, `"vs code"`, `"manual testing"`, `"sdlc"`, `"stlc"`, `"speech recognition"`
+- These are legitimate skills present in your resume that the current whitelist misses
 
-**2. `src/lib/ocrExtractor.ts`** -- OCR fallback for scanned PDFs
-- Import `tesseract.js` (createWorker)
-- `extractTextWithOCR(file: File): Promise<string>` function that:
-  - Creates a Tesseract worker with English language
-  - Recognizes text from the file
-  - Returns extracted text
-  - Terminates the worker after use
+**4. `src/hooks/useUserResume.ts` -- Better error logging**
+- Add `console.log` after each extraction step showing the text length and first 200 characters
+- This helps debug future extraction issues without guessing
 
-**3. `src/lib/skillExtractor.ts`** -- Frontend skill matching (mirrors edge function logic)
-- Copy the skills whitelist, ambiguous skills list, and extraction functions from `parse-resume/index.ts`
-- Export `extractSkillsFromText(text: string): string[]`
-- Reuse the same section-aware matching logic (find skills section header, whitelist matching, ambiguous skill context matching)
+### Technical Details
 
-### Modified Files
-
-**4. `src/hooks/useUserResume.ts`** -- Update upload mutation
-- Import `extractTextFromPDF`, `extractTextWithOCR`, and `extractSkillsFromText`
-- In `uploadResume.mutationFn`:
-  - After file selection, extract text using `extractTextFromPDF(file)`
-  - If extracted text is too short (less than 50 chars), fall back to `extractTextWithOCR(file)`
-  - Run `extractSkillsFromText(text)` on the result
-  - Still upload file to Supabase storage for record-keeping
-  - Instead of calling the `parse-resume` edge function, directly upsert to `user_resumes` table with the extracted skills, text, file URL, and file name
-  - This eliminates the server-side parsing dependency entirely
-
-**5. `src/components/jobs/ResumeUploader.tsx`** -- Add progress feedback
-- Add a `status` state to show extraction stages: "Uploading...", "Extracting text...", "Running OCR...", "Detecting skills..."
-- Display the status text in the button/loading area so users know what's happening during the multi-step process
-
-### Dependencies to Install
-- `pdfjs-dist` -- PDF text extraction
-- `tesseract.js` -- OCR fallback for scanned documents
-
-### Flow After Changes
-
+Updated `ocrExtractor.ts` approach:
 ```text
-User selects PDF
-  --> Frontend reads file as ArrayBuffer
-  --> pdfjs-dist extracts text from all pages
-  --> If text is too short (<50 chars), tesseract.js OCR runs as fallback
-  --> Frontend runs skill matching against whitelist
-  --> File uploaded to Supabase storage (for record-keeping)
-  --> Skills + text + file URL upserted directly to user_resumes table
-  --> UI shows detected skills
+import * as pdfjsLib from "pdfjs-dist";
+import { createWorker } from "tesseract.js";
+
+export async function extractTextWithOCR(file: File): Promise<string> {
+  // 1. Load PDF with pdfjs-dist
+  // 2. For each page, render to an offscreen canvas
+  // 3. Convert canvas to Blob (PNG)
+  // 4. Pass each Blob to tesseract worker.recognize()
+  // 5. Combine all page texts
+}
 ```
 
-### What Stays the Same
-- The `parse-resume` edge function stays deployed (existing data references it) but is no longer called for new uploads
-- ResumeStatus, SkillsEditor, and job matching logic are unchanged
-- The skills whitelist and matching algorithm remain identical (just duplicated to frontend)
-- File validation (PDF/DOCX, 10MB limit) in ResumeUploader stays the same
+Updated `pdfTextExtractor.ts` options:
+```text
+const pdf = await pdfjsLib.getDocument({
+  data: arrayBuffer,
+  useWorkerFetch: false,
+  isEvalSupported: false,
+  useSystemFonts: true,
+}).promise;
+```
 
-### Technical Notes
-- `pdfjs-dist` worker will be loaded from CDN (`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/{version}/pdf.worker.min.js`) to avoid Vite bundling issues
-- Tesseract.js worker also loads from CDN automatically, no special config needed
-- Both libraries work in the browser without CORS issues when loaded from CDN
-- DOCX files will continue to use the filename-only fallback (pdfjs-dist is PDF-only); a future enhancement could add DOCX parsing with `mammoth.js`
+### What stays the same
+- ResumeUploader UI and progress bar
+- ResumeStatus component
+- Upload flow and Supabase storage/upsert logic
+- Skill matching algorithm (section-aware, whitelist + ambiguous)
 
+### Expected result after fix
+Your resume should extract skills including: python, sql, pandas, numpy, matplotlib, seaborn, mysql, github, c++, opencv, fastapi, and others.
