@@ -62,22 +62,22 @@ Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
       throw new Error("Invalid type. Must be 'summary' or 'project'");
     }
 
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GEMINI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gemini-2.0-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 150,
-        temperature: 0.7,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            { parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 150,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -86,19 +86,13 @@ Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits to your workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const result = await response.json();
-    const content = result.choices?.[0]?.message?.content?.trim();
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!content) {
       throw new Error("No content generated from AI");
