@@ -69,7 +69,7 @@ Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
