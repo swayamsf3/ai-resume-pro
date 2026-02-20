@@ -23,6 +23,9 @@ const SKILLS_WHITELIST = [
   // Soft Skills
   "leadership","project management","communication","problem-solving",
   "mentoring","teamwork",
+  // Additional skills
+  "seaborn","opencv","jupyter notebook","vs code","manual testing",
+  "sdlc","stlc","speech recognition","power automate","canva",
 ];
 
 // Ambiguous skills that need list-context to match

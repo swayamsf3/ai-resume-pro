@@ -1,11 +1,18 @@
 import * as pdfjsLib from "pdfjs-dist";
 
-// Configure worker from CDN to avoid Vite bundling issues
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  
+  const pdf = await pdfjsLib.getDocument({
+    data: arrayBuffer,
+    useWorkerFetch: false,
+    isEvalSupported: false,
+    useSystemFonts: true,
+  }).promise;
+
+  console.log(`[PDF Extractor] Loaded PDF with ${pdf.numPages} pages`);
 
   const pageTexts: string[] = [];
 
@@ -18,5 +25,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     pageTexts.push(text);
   }
 
-  return pageTexts.join("\n");
+  const fullText = pageTexts.join("\n");
+  console.log(`[PDF Extractor] Extracted ${fullText.length} chars. Preview: ${fullText.substring(0, 200)}`);
+  return fullText;
 }
