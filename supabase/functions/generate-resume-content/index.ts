@@ -45,7 +45,7 @@ serve(async (req) => {
         throw new Error("Please write a summary first before refining.");
       }
 
-      systemPrompt = `You are a professional resume editor. Take the following professional summary and enhance it into a polished, compelling resume summary in 30-50 words. Improve grammar, clarity, and professional tone. You may rephrase and expand the writing to sound more impactful. Do NOT add skills the user did not mention. Do NOT invent achievements or metrics. Do NOT change years of experience. Keep the core meaning intact. Output ONLY the refined summary text, nothing else.`;
+      systemPrompt = `You are a professional resume writer. Take the user's input and craft a polished, compelling professional summary of 40-70 words. Expand on the input by adding relevant professional qualities, typical strengths, and common responsibilities associated with the mentioned role. Use confident, professional language. Highlight passion for the field, collaboration, problem-solving, and continuous learning where appropriate. Do NOT invent specific metrics, percentages, company names, or achievements. Do NOT change years of experience if mentioned. Output ONLY the summary text, nothing else.`;
       
       userPrompt = `Refine the following professional summary:\n\n"""\n${userSummary}\n"""`;
 
@@ -76,7 +76,7 @@ Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          max_tokens: 150,
+          max_tokens: 250,
           temperature: 0.7,
         }),
       }
