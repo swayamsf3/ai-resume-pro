@@ -130,7 +130,10 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
   const handlePhoneChange = (value: string) => {
     const sanitized = value.replace(/[^\d+\s]/g, "");
-    if (!sanitized.startsWith("+")) {
+    if (sanitized.startsWith("+")) {
+      const digitsOnly = sanitized.replace(/[^\d]/g, "");
+      if (digitsOnly.length > 12) return; // 2 country code + 10 number
+    } else {
       const digitsOnly = sanitized.replace(/\D/g, "");
       if (digitsOnly.length > 10) return;
     }
