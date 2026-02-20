@@ -7,7 +7,7 @@ const SKILLS_WHITELIST = [
   "kafka","etl","deep learning","nlp","tensorflow","pytorch","keras",
   // Web Development
   "javascript","typescript","react","angular","vue.js","svelte","next.js",
-  "node.js","express","django","flask","fastapi","html","css","sass",
+  "node.js","express","django","flask","fastapi","html","html5","css","css3","sass",
   "tailwind","bootstrap","graphql","webpack","vite",
   // Backend & Infrastructure
   "java","spring boot","ruby on rails","asp.net","laravel","docker",
@@ -26,10 +26,22 @@ const SKILLS_WHITELIST = [
   // Additional skills
   "seaborn","opencv","jupyter notebook","vs code","manual testing",
   "sdlc","stlc","speech recognition","power automate","canva",
+  // API & CS fundamentals
+  "restful api","rest api","oop","object oriented programming",
+  "dsa","data structures","algorithms",
 ];
 
 // Ambiguous skills that need list-context to match
-const AMBIGUOUS_SKILLS = ["c++", "c#", "r", "go", "php", "ruby"];
+const AMBIGUOUS_SKILLS = ["c", "c++", "c#", "r", "go", "php", "ruby"];
+
+// Normalize text for matching: lowercase, collapse whitespace, remove separators
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[\/\-_]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 // Common resume section headers
 const SECTION_HEADER_RE =
@@ -55,13 +67,13 @@ function findSkillsSection(text: string): string | null {
 }
 
 function matchWhitelistSkills(text: string): string[] {
-  const normalizedText = text.toLowerCase();
+  const normalizedInput = normalizeText(text);
   const found = new Set<string>();
 
   for (const skill of SKILLS_WHITELIST) {
     const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const pattern = new RegExp(`\\b${escaped}\\b`, "i");
-    if (pattern.test(normalizedText)) {
+    if (pattern.test(normalizedInput)) {
       found.add(skill.toLowerCase());
     }
   }
@@ -70,6 +82,7 @@ function matchWhitelistSkills(text: string): string[] {
 }
 
 function extractAmbiguousSkills(sectionText: string): string[] {
+  const normalizedSection = normalizeText(sectionText);
   const found: string[] = [];
   for (const skill of AMBIGUOUS_SKILLS) {
     const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -77,7 +90,7 @@ function extractAmbiguousSkills(sectionText: string): string[] {
       `(?:^|,|;|\\||•|\\u2022|\\n)\\s*${escaped}\\s*(?:,|;|\\||•|\\u2022|\\n|$)`,
       "im"
     );
-    if (pattern.test(sectionText)) {
+    if (pattern.test(normalizedSection)) {
       found.push(skill.toLowerCase());
     }
   }
@@ -96,12 +109,12 @@ export function extractSkillsFromText(text: string): string[] {
   } else {
     // Fallback: only match safe (≥4 char) skills against full text
     const safeSkills = SKILLS_WHITELIST.filter((s) => s.length >= 4);
-    const normalizedText = text.toLowerCase();
+    const normalizedInput = normalizeText(text);
     const found = new Set<string>();
     for (const skill of safeSkills) {
       const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const pattern = new RegExp(`\\b${escaped}\\b`, "i");
-      if (pattern.test(normalizedText)) {
+      if (pattern.test(normalizedInput)) {
         found.add(skill.toLowerCase());
       }
     }

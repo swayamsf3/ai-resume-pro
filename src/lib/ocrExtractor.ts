@@ -39,7 +39,7 @@ export async function extractTextWithOCR(file: File): Promise<string> {
       const page = await pdf.getPage(i);
       const blob = await renderPageToBlob(page);
       const { data } = await worker.recognize(blob);
-      console.log(`[OCR] Page ${i}: ${data.text.length} chars`);
+      console.log(`[OCR] Page ${i}: ${data.text.length} chars. Preview: ${data.text.substring(0, 300)}`);
       pageTexts.push(data.text);
     }
   } finally {
