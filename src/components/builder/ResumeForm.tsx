@@ -126,6 +126,27 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const [newSkill, setNewSkill] = useState("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState("");
+
+  const handlePhoneChange = (value: string) => {
+    // Allow only digits, + symbol, and spaces
+    const sanitized = value.replace(/[^\d+\s]/g, "");
+    updatePersonalInfo("phone", sanitized);
+    if (phoneError) setPhoneError("");
+  };
+
+  const validatePhone = (value: string) => {
+    if (!value.trim()) {
+      setPhoneError("");
+      return;
+    }
+    const phoneRegex = /^\+\d{2}\s?\d{10}$/;
+    if (!phoneRegex.test(value.trim())) {
+      setPhoneError("Enter a valid phone: +91 9876543210");
+    } else {
+      setPhoneError("");
+    }
+  };
 
   // Persist skills to localStorage for job matching sync
   useEffect(() => {
@@ -453,10 +474,14 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="+91 9876543210"
                   value={resumeData.personalInfo.phone}
-                  onChange={(e) => updatePersonalInfo("phone", e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  onBlur={(e) => validatePhone(e.target.value)}
                 />
+                {phoneError && (
+                  <p className="text-sm text-destructive">{phoneError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
