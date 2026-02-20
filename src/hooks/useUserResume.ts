@@ -63,23 +63,27 @@ export function useUserResume() {
       let text = "";
       try {
         text = await extractTextFromPDF(file);
+        console.log(`[Resume Upload] PDF extraction: ${text.length} chars. Preview: ${text.substring(0, 200)}`);
       } catch (e) {
-        console.warn("PDF text extraction failed, will try OCR:", e);
+        console.warn("[Resume Upload] PDF text extraction failed, will try OCR:", e);
       }
 
       // Step 2: OCR fallback if text is too short
       if (text.trim().length < 50) {
+        console.log(`[Resume Upload] Text too short (${text.trim().length} chars), falling back to OCR`);
         setUploadStatus("ocr");
         try {
           text = await extractTextWithOCR(file);
+          console.log(`[Resume Upload] OCR extraction: ${text.length} chars. Preview: ${text.substring(0, 200)}`);
         } catch (e) {
-          console.warn("OCR extraction failed:", e);
+          console.warn("[Resume Upload] OCR extraction failed:", e);
         }
       }
 
       // Step 3: Extract skills
       setUploadStatus("matching");
       const skills = extractSkillsFromText(text);
+      console.log(`[Resume Upload] Detected ${skills.length} skills:`, skills);
 
       // Step 4: Upload file to storage for record-keeping
       setUploadStatus("uploading");
