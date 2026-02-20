@@ -1,37 +1,32 @@
 
 
-## Fix: Prevent Future Dates and Enforce Chronological Order in Resume Builder
+## Replace Lovable AI Gateway with Your Gemini API Key
 
-### Problem
-All date fields in the Resume Builder accept future dates and don't enforce that End Date comes after Start Date.
+### What Changes
 
-### Solution
-Use native HTML `max` and `min` attributes on all `<Input type="month">` fields. No libraries, no backend changes.
+One edge function file and one new secret.
 
-### Changes (single file: `src/components/builder/ResumeForm.tsx`)
+### Steps
 
-**Step 1 -- Compute current month (timezone-safe)**
+1. **Store your Gemini API key** as a Supabase secret named `GEMINI_API_KEY`
 
-Add this at the top of the `ResumeForm` component:
+2. **Update `supabase/functions/generate-resume-content/index.ts`**:
+   - Replace `LOVABLE_API_KEY` with `GEMINI_API_KEY`
+   - Change the API URL from `https://ai.gateway.lovable.dev/v1/chat/completions` to `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
+   - Change the model from `google/gemini-3-flash-preview` to `gemini-1.5-flash`
+   - All prompts, error handling, and CORS headers stay the same
 
-```js
-const now = new Date();
-const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-```
+3. **Deploy** the updated edge function
 
-**Step 2 -- Add `max` and `min` to all 5 date inputs**
+### Technical Summary
 
-| Section | Field | `max` | `min` |
-|---|---|---|---|
-| Experience | Start Date (line 462) | `currentMonth` | -- |
-| Experience | End Date (line 470) | `currentMonth` | `exp.startDate` |
-| Education | Start Date (line 550) | `currentMonth` | -- |
-| Education | End Date (line 558) | `currentMonth` | `edu.startDate` |
-| Certifications | Date Obtained (line 718) | `currentMonth` | -- |
+| Setting | Before | After |
+|---------|--------|-------|
+| Secret | `LOVABLE_API_KEY` | `GEMINI_API_KEY` |
+| Endpoint | `https://ai.gateway.lovable.dev/v1/chat/completions` | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
+| Model | `google/gemini-3-flash-preview` | `gemini-1.5-flash` |
 
-**What this achieves:**
-- No month input allows selecting a date beyond the current month
-- Experience End Date cannot be earlier than its Start Date
-- Education End Date cannot be earlier than its Start Date
-- All enforced natively by the browser with zero extra code or libraries
+### No other files affected
+- Frontend code calls this via `supabase.functions.invoke` and needs no changes
+- `parse-resume` function uses no AI -- unchanged
 
