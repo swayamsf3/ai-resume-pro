@@ -1,24 +1,44 @@
 
 
-## Validate Phone Number Input in Resume Builder
+## Restrict Phone Input Length Without Country Code
 
-### Problem
-The phone number field in the Resume Builder form currently accepts any text. It should only accept a format like `+XX XXXXXXXXXX` (a `+` symbol, 2-digit country code, and 10-digit number).
-
-### Changes
+### Change
 
 **`src/components/builder/ResumeForm.tsx`**
-- Replace the plain `Input` for the phone field with a validated input that:
-  - Restricts typing to only digits and the `+` symbol
-  - On change, strips any characters that are not digits or `+`
-  - On blur (when the user leaves the field), validates the format: must match `+XX XXXXXXXXXX` or `+XXXXXXXXXXXX` (with or without space after country code)
-  - Shows an error message below the field if the format is invalid (e.g., "Enter a valid phone: +91 9876543210")
-  - Updates the placeholder to `+91 9876543210` to clarify the expected format
-- Add a small validation state (`phoneError`) to show/hide the error message
-- The regex pattern used: `/^\+\d{2}\s?\d{10}$/`
+
+Update `handlePhoneChange` to enforce a max length based on whether the input starts with `+`:
+- If input starts with `+`: allow up to 13 characters (e.g. `+91 9876543210`)
+- If input does NOT start with `+`: limit to 10 digits only
+
+Update `validatePhone` to accept both formats:
+- With country code: `/^\+\d{2}\s?\d{10}$/` (existing)
+- Without country code: `/^\d{10}$/` (new)
+
+### Technical Detail
+
+```text
+const handlePhoneChange = (value: string) => {
+  const sanitized = value.replace(/[^\d+\s]/g, "");
+  // If no country code, limit to 10 digits
+  if (!sanitized.startsWith("+")) {
+    const digitsOnly = sanitized.replace(/\D/g, "");
+    if (digitsOnly.length > 10) return; // block further input
+  }
+  updatePersonalInfo("phone", sanitized);
+  if (phoneError) setPhoneError("");
+};
+
+const validatePhone = (value: string) => {
+  if (!value.trim()) { setPhoneError(""); return; }
+  const withCode = /^\+\d{2}\s?\d{10}$/;
+  const withoutCode = /^\d{10}$/;
+  if (!withCode.test(value.trim()) && !withoutCode.test(value.trim())) {
+    setPhoneError("Enter valid phone: +91 9876543210 or 9876543210");
+  } else {
+    setPhoneError("");
+  }
+};
+```
 
 ### What stays the same
-- All other form fields and sections
-- Resume data structure (phone remains a string)
-- Preview rendering of the phone number
-
+- All other form fields, resume data structure, and preview rendering
