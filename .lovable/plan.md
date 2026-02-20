@@ -1,64 +1,34 @@
 
-## Fix PDF Skill Extraction - Two Broken Steps
 
-### Root Cause Analysis
-1. **pdfjs-dist text extraction fails silently** -- the extracted text is less than 50 characters, triggering the OCR fallback
-2. **OCR fallback crashes** -- `tesseract.js` receives a PDF File directly, but it only accepts images (PNG/JPG). This causes `"Error attempting to read image"` and returns nothing
-3. Result: `text` stays empty, `extractSkillsFromText("")` returns 0 skills
+## Add Missing Skills and Normalize OCR Text
 
-### Fixes
+### Changes
 
-**1. `src/lib/pdfTextExtractor.ts` -- Harden PDF extraction**
-- Add `console.log` to show extracted text length for debugging
-- Add a try/catch around `getDocument` with a more descriptive error
-- Try using `useWorkerFetch: false` and `isEvalSupported: false` in the `getDocument` options to avoid worker/eval issues in the Lovable sandbox environment
+**1. `src/lib/skillExtractor.ts` -- Expand whitelist and add text normalization**
 
-**2. `src/lib/ocrExtractor.ts` -- Fix: render PDF pages to canvas images first**
-- Import `pdfjs-dist` to render each page onto a canvas element
-- Convert each canvas to a Blob (PNG image)
-- Pass each page image to `tesseract.js` for recognition
-- Combine text from all pages
-- This fixes the "Error attempting to read image" crash
+Add these skills to the whitelist:
+- `"html5"`, `"css3"`, `"restful api"`, `"rest api"`, `"oop"`, `"object oriented programming"`, `"dsa"`, `"data structures"`, `"algorithms"`
 
-**3. `src/lib/skillExtractor.ts` -- Add missing skills from your resume**
-- Add to whitelist: `"seaborn"`, `"opencv"`, `"jupyter notebook"`, `"vs code"`, `"manual testing"`, `"sdlc"`, `"stlc"`, `"speech recognition"`
-- These are legitimate skills present in your resume that the current whitelist misses
+Move `"c"` to the `AMBIGUOUS_SKILLS` list (single letter, needs list-context matching like `"r"` and `"go"`). `"c++"` is already there.
 
-**4. `src/hooks/useUserResume.ts` -- Better error logging**
-- Add `console.log` after each extraction step showing the text length and first 200 characters
-- This helps debug future extraction issues without guessing
+Add a `normalizeText()` function that runs before matching:
+- Convert to lowercase
+- Replace multiple spaces/tabs with a single space
+- Remove or normalize special characters like `/`, `-`, `_` that OCR may inject between words (e.g. "C / C++" becomes "C C++")
+- Trim whitespace
 
-### Technical Details
+Apply this normalization in `matchWhitelistSkills`, `extractAmbiguousSkills`, and the fallback path.
 
-Updated `ocrExtractor.ts` approach:
-```text
-import * as pdfjsLib from "pdfjs-dist";
-import { createWorker } from "tesseract.js";
+**2. `src/lib/ocrExtractor.ts` -- Add console log of first 300 chars**
 
-export async function extractTextWithOCR(file: File): Promise<string> {
-  // 1. Load PDF with pdfjs-dist
-  // 2. For each page, render to an offscreen canvas
-  // 3. Convert canvas to Blob (PNG)
-  // 4. Pass each Blob to tesseract worker.recognize()
-  // 5. Combine all page texts
-}
-```
-
-Updated `pdfTextExtractor.ts` options:
-```text
-const pdf = await pdfjsLib.getDocument({
-  data: arrayBuffer,
-  useWorkerFetch: false,
-  isEvalSupported: false,
-  useSystemFonts: true,
-}).promise;
-```
+Add a `console.log` showing the first 300 characters of OCR output per page so you can verify formatting in the browser console.
 
 ### What stays the same
-- ResumeUploader UI and progress bar
-- ResumeStatus component
-- Upload flow and Supabase storage/upsert logic
-- Skill matching algorithm (section-aware, whitelist + ambiguous)
+- Upload flow, ResumeUploader UI, progress bar
+- Supabase storage/upsert logic
+- Section-aware matching algorithm structure
+- PDF text extractor (no changes needed)
 
-### Expected result after fix
-Your resume should extract skills including: python, sql, pandas, numpy, matplotlib, seaborn, mysql, github, c++, opencv, fastapi, and others.
+### Expected result
+Your resume should now also detect: html, html5, css, css3, c, c++, restful api, oop, dsa, data structures, algorithms -- in addition to all previously detected skills.
+
