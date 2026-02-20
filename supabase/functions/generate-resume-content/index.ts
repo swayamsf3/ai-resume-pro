@@ -51,12 +51,12 @@ serve(async (req) => {
 
     } else if (type === "project") {
       const projectData = data as ProjectData;
-      systemPrompt = `You are a professional resume writer. Generate 3-4 concise bullet points for a resume project description. Each bullet should be 10-15 words max and start with an action verb. Focus on: what was built and technologies used. Do NOT invent metrics, percentages, accuracy numbers, or performance claims. Do NOT fabricate results the user did not provide. Total output must NOT exceed 50 words. Use • character to separate bullets. Output ONLY the bullet points, nothing else.`;
+      systemPrompt = `You are a professional resume writer. Generate 4-6 detailed bullet points for a resume project description. Each bullet should be 15-25 words and start with a strong action verb. Describe: what was built, key features implemented, technologies and tools used, architectural decisions, and the problem the project solves. Infer reasonable technical details based on the technologies mentioned. Do NOT invent specific metrics, percentages, or performance numbers. Total output should be 80-120 words. Use the • character to separate bullets. Output ONLY the bullet points, nothing else.`;
       
-      userPrompt = `Write bullet points for a resume project:
+      userPrompt = `Write detailed bullet points for a resume project:
 Project Name: ${projectData.name || "Project"}
 Technologies: ${projectData.technologies || "modern technologies"}
-Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
+Remember: 4-6 bullets, strong action verbs, 80-120 words total. Be descriptive about features and technical implementation.`;
 
     } else {
       throw new Error("Invalid type. Must be 'summary' or 'project'");
