@@ -27,9 +27,9 @@ serve(async (req) => {
   }
 
   try {
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY is not configured");
     }
 
     const { type, data }: RequestBody = await req.json();
@@ -63,18 +63,21 @@ Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents: [
-            { parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
           ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 150,
-          },
+          max_tokens: 150,
+          temperature: 0.7,
         }),
       }
     );
@@ -92,7 +95,7 @@ Remember: 3-4 bullets, action verbs, 50 words maximum total.`;
     }
 
     const result = await response.json();
-    const content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const content = result.choices?.[0]?.message?.content?.trim();
 
     if (!content) {
       throw new Error("No content generated from AI");
