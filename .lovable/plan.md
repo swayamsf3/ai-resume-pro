@@ -1,32 +1,82 @@
 
 
-## Replace Lovable AI Gateway with Your Gemini API Key
+## Switch to Native Gemini API Endpoint
 
-### What Changes
+### Problem
+The OpenAI-compatible Gemini endpoint (`/v1beta/openai/chat/completions`) is returning 429 rate limit errors.
 
-One edge function file and one new secret.
+### Solution
+Update `supabase/functions/generate-resume-content/index.ts` to use the native Gemini REST API instead.
 
-### Steps
+### Changes in `supabase/functions/generate-resume-content/index.ts`
 
-1. **Store your Gemini API key** as a Supabase secret named `GEMINI_API_KEY`
+1. **API URL**: Change from `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` to `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
-2. **Update `supabase/functions/generate-resume-content/index.ts`**:
-   - Replace `LOVABLE_API_KEY` with `GEMINI_API_KEY`
-   - Change the API URL from `https://ai.gateway.lovable.dev/v1/chat/completions` to `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
-   - Change the model from `google/gemini-3-flash-preview` to `gemini-1.5-flash`
-   - All prompts, error handling, and CORS headers stay the same
+2. **Request format**: Replace OpenAI-style messages with Gemini-native `contents` format -- combine `systemPrompt` and `userPrompt` into a single text part
 
-3. **Deploy** the updated edge function
+3. **Auth header**: Remove the `Authorization: Bearer` header (key is now in the URL query param)
 
-### Technical Summary
+4. **Response parsing**: Change from `result.choices?.[0]?.message?.content` to `result.candidates?.[0]?.content?.parts?.[0]?.text`
 
-| Setting | Before | After |
-|---------|--------|-------|
-| Secret | `LOVABLE_API_KEY` | `GEMINI_API_KEY` |
-| Endpoint | `https://ai.gateway.lovable.dev/v1/chat/completions` | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
-| Model | `google/gemini-3-flash-preview` | `gemini-1.5-flash` |
+5. **Remove 402 handling**: Gemini does not use credit exhaustion status codes
 
-### No other files affected
-- Frontend code calls this via `supabase.functions.invoke` and needs no changes
-- `parse-resume` function uses no AI -- unchanged
+### What stays the same
+- All prompt logic (system and user prompts)
+- CORS headers
+- Input validation
+- Error handling structure (429 handling kept, 402 removed)
+- Frontend code -- no changes needed
+
+### Technical Details
+
+The fetch call changes from:
+```typescript
+const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${GEMINI_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "gemini-2.0-flash",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    max_tokens: 150,
+    temperature: 0.7,
+  }),
+});
+```
+
+To:
+```typescript
+const response = await fetch(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        { parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 150,
+      },
+    }),
+  }
+);
+```
+
+Response parsing changes from:
+```typescript
+const content = result.choices?.[0]?.message?.content?.trim();
+```
+To:
+```typescript
+const content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+```
+
+After updating, the edge function will be redeployed.
 
