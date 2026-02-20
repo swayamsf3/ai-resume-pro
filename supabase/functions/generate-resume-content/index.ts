@@ -51,12 +51,12 @@ serve(async (req) => {
 
     } else if (type === "project") {
       const projectData = data as ProjectData;
-      systemPrompt = `You are a professional resume writer. Generate 4-6 detailed bullet points for a resume project description. Each bullet should be 15-25 words and start with a strong action verb. Describe: what was built, key features implemented, technologies and tools used, architectural decisions, and the problem the project solves. Infer reasonable technical details based on the technologies mentioned. Do NOT invent specific metrics, percentages, or performance numbers. Total output should be 80-120 words. Use the • character to separate bullets. Output ONLY the bullet points, nothing else.`;
+      systemPrompt = `You are a professional resume writer. Generate 4-6 detailed bullet points for a resume project description. Each bullet MUST be at least 20-30 words and start with a strong action verb. Never write a bullet shorter than 12 words. Describe: what was built, key features implemented, technologies and tools used, architectural decisions, and the problem the project solves. Infer reasonable technical details based on the technologies mentioned. Do NOT invent specific metrics, percentages, or performance numbers. Total output should be 120-180 words. Use the • character to separate bullets. Output ONLY the bullet points, nothing else.`;
       
       userPrompt = `Write detailed bullet points for a resume project:
 Project Name: ${projectData.name || "Project"}
 Technologies: ${projectData.technologies || "modern technologies"}
-Remember: 4-6 bullets, strong action verbs, 80-120 words total. Be descriptive about features and technical implementation.`;
+Remember: 4-6 bullets, each bullet must be 20-30 words, 120-180 words total. Be descriptive about features and technical implementation.`;
 
     } else {
       throw new Error("Invalid type. Must be 'summary' or 'project'");
@@ -76,7 +76,7 @@ Remember: 4-6 bullets, strong action verbs, 80-120 words total. Be descriptive a
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          max_tokens: 250,
+          max_tokens: 400,
           temperature: 0.7,
         }),
       }
