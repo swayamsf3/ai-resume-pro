@@ -129,20 +129,21 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const [phoneError, setPhoneError] = useState("");
 
   const handlePhoneChange = (value: string) => {
-    // Allow only digits, + symbol, and spaces
     const sanitized = value.replace(/[^\d+\s]/g, "");
+    if (!sanitized.startsWith("+")) {
+      const digitsOnly = sanitized.replace(/\D/g, "");
+      if (digitsOnly.length > 10) return;
+    }
     updatePersonalInfo("phone", sanitized);
     if (phoneError) setPhoneError("");
   };
 
   const validatePhone = (value: string) => {
-    if (!value.trim()) {
-      setPhoneError("");
-      return;
-    }
-    const phoneRegex = /^\+\d{2}\s?\d{10}$/;
-    if (!phoneRegex.test(value.trim())) {
-      setPhoneError("Enter a valid phone: +91 9876543210");
+    if (!value.trim()) { setPhoneError(""); return; }
+    const withCode = /^\+\d{2}\s?\d{10}$/;
+    const withoutCode = /^\d{10}$/;
+    if (!withCode.test(value.trim()) && !withoutCode.test(value.trim())) {
+      setPhoneError("Enter valid phone: +91 9876543210 or 9876543210");
     } else {
       setPhoneError("");
     }
