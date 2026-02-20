@@ -1,34 +1,24 @@
 
 
-## Add Missing Skills and Normalize OCR Text
+## Validate Phone Number Input in Resume Builder
+
+### Problem
+The phone number field in the Resume Builder form currently accepts any text. It should only accept a format like `+XX XXXXXXXXXX` (a `+` symbol, 2-digit country code, and 10-digit number).
 
 ### Changes
 
-**1. `src/lib/skillExtractor.ts` -- Expand whitelist and add text normalization**
-
-Add these skills to the whitelist:
-- `"html5"`, `"css3"`, `"restful api"`, `"rest api"`, `"oop"`, `"object oriented programming"`, `"dsa"`, `"data structures"`, `"algorithms"`
-
-Move `"c"` to the `AMBIGUOUS_SKILLS` list (single letter, needs list-context matching like `"r"` and `"go"`). `"c++"` is already there.
-
-Add a `normalizeText()` function that runs before matching:
-- Convert to lowercase
-- Replace multiple spaces/tabs with a single space
-- Remove or normalize special characters like `/`, `-`, `_` that OCR may inject between words (e.g. "C / C++" becomes "C C++")
-- Trim whitespace
-
-Apply this normalization in `matchWhitelistSkills`, `extractAmbiguousSkills`, and the fallback path.
-
-**2. `src/lib/ocrExtractor.ts` -- Add console log of first 300 chars**
-
-Add a `console.log` showing the first 300 characters of OCR output per page so you can verify formatting in the browser console.
+**`src/components/builder/ResumeForm.tsx`**
+- Replace the plain `Input` for the phone field with a validated input that:
+  - Restricts typing to only digits and the `+` symbol
+  - On change, strips any characters that are not digits or `+`
+  - On blur (when the user leaves the field), validates the format: must match `+XX XXXXXXXXXX` or `+XXXXXXXXXXXX` (with or without space after country code)
+  - Shows an error message below the field if the format is invalid (e.g., "Enter a valid phone: +91 9876543210")
+  - Updates the placeholder to `+91 9876543210` to clarify the expected format
+- Add a small validation state (`phoneError`) to show/hide the error message
+- The regex pattern used: `/^\+\d{2}\s?\d{10}$/`
 
 ### What stays the same
-- Upload flow, ResumeUploader UI, progress bar
-- Supabase storage/upsert logic
-- Section-aware matching algorithm structure
-- PDF text extractor (no changes needed)
-
-### Expected result
-Your resume should now also detect: html, html5, css, css3, c, c++, restful api, oop, dsa, data structures, algorithms -- in addition to all previously detected skills.
+- All other form fields and sections
+- Resume data structure (phone remains a string)
+- Preview rendering of the phone number
 
