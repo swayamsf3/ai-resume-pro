@@ -1,44 +1,59 @@
 
 
-## Switch to Native Gemini API Endpoint
+## Switch from Gemini to Groq API
 
-### Problem
-The OpenAI-compatible Gemini endpoint (`/v1beta/openai/chat/completions`) is returning 429 rate limit errors.
+### What Changes
 
-### Solution
-Update `supabase/functions/generate-resume-content/index.ts` to use the native Gemini REST API instead.
+One edge function update and one new secret.
 
-### Changes in `supabase/functions/generate-resume-content/index.ts`
+### Steps
 
-1. **API URL**: Change from `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` to `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
+1. **Store your Groq API key** as a Supabase secret named `GROQ_API_KEY`
+   - You can get a free API key from [console.groq.com](https://console.groq.com)
 
-2. **Request format**: Replace OpenAI-style messages with Gemini-native `contents` format -- combine `systemPrompt` and `userPrompt` into a single text part
+2. **Update `supabase/functions/generate-resume-content/index.ts`**:
+   - Replace `GEMINI_API_KEY` with `GROQ_API_KEY`
+   - Change the API endpoint to Groq's OpenAI-compatible endpoint: `https://api.groq.com/openai/v1/chat/completions`
+   - Switch to OpenAI-style `messages` format (system + user messages)
+   - Use model `llama-3.3-70b-versatile` (fast and capable)
+   - Parse response as `result.choices[0].message.content`
 
-3. **Auth header**: Remove the `Authorization: Bearer` header (key is now in the URL query param)
+3. **Deploy** the updated edge function
 
-4. **Response parsing**: Change from `result.choices?.[0]?.message?.content` to `result.candidates?.[0]?.content?.parts?.[0]?.text`
+### Technical Summary
 
-5. **Remove 402 handling**: Gemini does not use credit exhaustion status codes
+| Setting | Before (Gemini) | After (Groq) |
+|---------|-----------------|--------------|
+| Secret | `GEMINI_API_KEY` | `GROQ_API_KEY` |
+| Endpoint | `generativelanguage.googleapis.com/v1beta/models/...` | `api.groq.com/openai/v1/chat/completions` |
+| Model | `gemini-2.0-flash` | `llama-3.3-70b-versatile` |
+| Format | Gemini-native `contents` | OpenAI-compatible `messages` |
 
-### What stays the same
-- All prompt logic (system and user prompts)
-- CORS headers
-- Input validation
-- Error handling structure (429 handling kept, 402 removed)
-- Frontend code -- no changes needed
+### No other files affected
+- Frontend calls this via `supabase.functions.invoke` -- no changes needed
+- All prompts, CORS headers, and error handling stay the same
 
 ### Technical Details
 
 The fetch call changes from:
-```typescript
-const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-  method: "POST",
+```text
+fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+  body: JSON.stringify({
+    contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
+    generationConfig: { temperature: 0.7, maxOutputTokens: 150 },
+  }),
+})
+```
+
+To:
+```text
+fetch("https://api.groq.com/openai/v1/chat/completions", {
   headers: {
-    Authorization: `Bearer ${GEMINI_API_KEY}`,
+    Authorization: `Bearer ${GROQ_API_KEY}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    model: "gemini-2.0-flash",
+    model: "llama-3.3-70b-versatile",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -46,37 +61,15 @@ const response = await fetch("https://generativelanguage.googleapis.com/v1beta/o
     max_tokens: 150,
     temperature: 0.7,
   }),
-});
-```
-
-To:
-```typescript
-const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        { parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 150,
-      },
-    }),
-  }
-);
+})
 ```
 
 Response parsing changes from:
-```typescript
-const content = result.choices?.[0]?.message?.content?.trim();
+```text
+result.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
 ```
 To:
-```typescript
-const content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+```text
+result.choices?.[0]?.message?.content?.trim()
 ```
-
-After updating, the edge function will be redeployed.
 
