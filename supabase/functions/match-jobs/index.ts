@@ -171,20 +171,31 @@ function skillsMatch(userSkill: string, jobSkill: string): boolean {
  
      const userSkills: string[] = userResume?.skills || [];
  
-     // Get all active jobs
-     const { data: jobs, error: jobsError } = await supabaseAdmin
-       .from("jobs")
-       .select("*")
-       .eq("is_active", true)
-       .order("posted_at", { ascending: false });
- 
-     if (jobsError) {
-       console.error("Jobs fetch error:", jobsError);
-       return new Response(
-         JSON.stringify({ error: "Failed to fetch jobs" }),
-         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-       );
-     }
+    // Get all active jobs (paginated to avoid 1000-row limit)
+    const PAGE_SIZE = 1000;
+    let allJobs: Job[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error: jobsError } = await supabaseAdmin
+        .from("jobs")
+        .select("*")
+        .eq("is_active", true)
+        .order("posted_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (jobsError) {
+        console.error("Jobs fetch error:", jobsError);
+        return new Response(
+          JSON.stringify({ error: "Failed to fetch jobs" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      allJobs = allJobs.concat(data || []);
+      if (!data || data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+    const jobs = allJobs;
  
      // Calculate match for each job
      const matchedJobs: MatchedJob[] = (jobs || []).map((job: Job) => {
