@@ -158,7 +158,7 @@ const AdminJobs = () => {
                 onChange={(e) => setJsearchSeedMode(e.target.checked)}
                 className="rounded"
               />
-              Seed Mode (5 queries x 10 pages — up to 50 API requests)
+              Seed Mode (5 queries x 5 pages — up to 25 API requests, 3-day cooldown)
             </label>
             <p className="text-xs text-muted-foreground">
               Fetches jobs from JSearch (RapidAPI) independently. Free tier: 500 requests/month.
