@@ -1,44 +1,54 @@
 
 
-## Fix: Admin Dashboard Capped at 1000 Jobs
+## Make "Jobs Saved" Clickable + Add Saved Jobs View
 
-### Root Cause
-Supabase PostgREST enforces a server-side `max_rows = 1000` limit. The `.range(0, 4999)` call does NOT override this -- PostgREST still caps the response at 1000 rows. The database actually has **4,701 jobs**.
+### Problem
+The "Jobs Saved" stat on the Dashboard is a static card with no click behavior. Users expect to click it and see their saved jobs, but nothing happens.
 
 ### Solution
-Replace the single query with a paginated loop that fetches all jobs in batches of 1000, identical to the pattern already used in the edge functions.
+1. Make the "Jobs Saved" stat card on the Dashboard clickable, linking to `/jobs?filter=saved`
+2. Add a "Saved Jobs" tab/filter on the Jobs page that shows only saved jobs
+3. Read the `filter=saved` query param on the Jobs page to auto-activate the saved filter
 
 ### Changes
 
-**File: `src/hooks/useAdminJobs.ts`**
+#### 1. `src/pages/Dashboard.tsx`
+- Wrap the "Jobs Saved" stat card in a `<Link to="/jobs?filter=saved">` so clicking it navigates to the saved jobs view
+- Add a cursor pointer style to indicate it's clickable
 
-Replace the `jobsQuery` function with a paginated fetch loop:
+#### 2. `src/pages/Jobs.tsx`
+- Read `?filter=saved` from the URL search params
+- Add a "Saved Jobs" toggle button alongside the existing match percentage filters
+- When active, filter the job list to only show jobs whose IDs are in the user's `savedJobIds`
+- Pull `savedJobIds` from the existing `useSavedJobs` hook (already imported)
 
+#### 3. `src/hooks/useSavedJobs.ts`
+- No changes needed -- it already exposes `savedJobIds` and `isJobSaved`
+
+### Technical Details
+
+**Dashboard link:**
 ```typescript
-jobsQuery = useQuery({
-  queryKey: ["admin-jobs"],
-  queryFn: async () => {
-    const PAGE_SIZE = 1000;
-    let allJobs: any[] = [];
-    let from = 0;
-    while (true) {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(from, from + PAGE_SIZE - 1);
-      if (error) throw error;
-      allJobs = allJobs.concat(data || []);
-      if (!data || data.length < PAGE_SIZE) break;
-      from += PAGE_SIZE;
-    }
-    return allJobs;
-  },
-});
+// Wrap the "Jobs Saved" stat card
+<Link to="/jobs?filter=saved">
+  <Card className="border-border hover:shadow-lg transition-shadow cursor-pointer">
+    ...
+  </Card>
+</Link>
 ```
 
-### Important Note
-The RLS policy on the `jobs` table only allows viewing **active** jobs (`is_active = true`). Since all 4,701 jobs are currently active, this will work. However, the admin dashboard's "Active / Inactive" stat will always show 0 inactive because RLS hides inactive jobs from the client. If you want the admin to see inactive jobs too, a separate RLS policy or a service-role edge function would be needed.
+**Jobs page filter logic:**
+```typescript
+const [searchParams] = useSearchParams();
+const [showSavedOnly, setShowSavedOnly] = useState(
+  searchParams.get("filter") === "saved"
+);
 
-### Files Modified
-- `src/hooks/useAdminJobs.ts` -- paginated fetching loop
+// Add to filteredJobs logic:
+if (showSavedOnly && !isJobSaved(job.id)) return false;
+```
+
+**Files modified:**
+- `src/pages/Dashboard.tsx` -- make stat card clickable
+- `src/pages/Jobs.tsx` -- add saved jobs filter with URL param support
+
