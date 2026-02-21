@@ -301,6 +301,242 @@ const FEEDS: FeedConfig[] = [
       },
     ],
   },
+  // ---- Indian Companies ----
+  {
+    name: "Infosys",
+    url: "https://careers.infosys.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "infy-001",
+        job_title: "Software Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "8,00,000 - 12,00,000 INR per year",
+        description:
+          "Design and develop enterprise Java applications using Spring Boot and Hibernate. Collaborate with cross-functional teams to deliver scalable microservices for global clients.",
+        required_skills: ["Java", "Spring Boot", "Hibernate", "Microservices", "SQL"],
+        application_url: "https://careers.infosys.com/infy-001",
+      },
+      {
+        job_id: "infy-002",
+        job_title: "Data Analyst",
+        job_location: "Pune, India",
+        job_type: "Full-time",
+        salary: "6,00,000 - 10,00,000 INR per year",
+        description:
+          "Analyze large datasets using Python and SQL to generate actionable business insights. Build dashboards in Power BI and Tableau for stakeholder reporting.",
+        required_skills: ["Python", "SQL", "Power BI", "Tableau", "Excel"],
+        application_url: "https://careers.infosys.com/infy-002",
+      },
+      {
+        job_id: "infy-003",
+        job_title: "Cloud Solutions Architect",
+        job_location: "Hyderabad, India",
+        job_type: "Full-time",
+        salary: "18,00,000 - 28,00,000 INR per year",
+        description:
+          "Design cloud-native architectures on AWS and Azure for enterprise clients. Lead cloud migration projects and implement infrastructure as code using Terraform.",
+        required_skills: ["AWS", "Azure", "Terraform", "Docker", "Kubernetes"],
+        application_url: "https://careers.infosys.com/infy-003",
+      },
+    ],
+  },
+  {
+    name: "TCS",
+    url: "https://careers.tcs.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "tcs-001",
+        job_title: "Full Stack Developer",
+        job_location: "Mumbai, India",
+        job_type: "Full-time",
+        salary: "10,00,000 - 16,00,000 INR per year",
+        description:
+          "Build end-to-end web applications using React and Node.js. Develop RESTful APIs and integrate with enterprise databases. Participate in agile development sprints.",
+        required_skills: ["React", "Node.js", "TypeScript", "PostgreSQL", "REST"],
+        application_url: "https://careers.tcs.com/tcs-001",
+      },
+      {
+        job_id: "tcs-002",
+        job_title: "Cloud Engineer",
+        job_location: "Chennai, India",
+        job_type: "Full-time",
+        salary: "12,00,000 - 20,00,000 INR per year",
+        description:
+          "Manage and optimize cloud infrastructure on AWS. Implement CI/CD pipelines using Jenkins and automate deployments with Ansible and Terraform.",
+        required_skills: ["AWS", "Jenkins", "Terraform", "Docker", "CI/CD"],
+        application_url: "https://careers.tcs.com/tcs-002",
+      },
+    ],
+  },
+  {
+    name: "Wipro",
+    url: "https://careers.wipro.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "wipro-001",
+        job_title: "DevOps Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "10,00,000 - 18,00,000 INR per year",
+        description:
+          "Design and maintain CI/CD pipelines using Jenkins and GitLab CI. Manage containerized workloads with Docker and Kubernetes on AWS infrastructure.",
+        required_skills: ["Docker", "Kubernetes", "Jenkins", "AWS", "CI/CD"],
+        application_url: "https://careers.wipro.com/wipro-001",
+      },
+      {
+        job_id: "wipro-002",
+        job_title: "QA Engineer",
+        job_location: "Noida, India",
+        job_type: "Full-time",
+        salary: "6,00,000 - 10,00,000 INR per year",
+        description:
+          "Design and execute automated test suites using Selenium and Cypress. Perform functional, regression, and performance testing. Integrate tests into CI/CD pipelines.",
+        required_skills: ["Selenium", "Cypress", "Java", "CI/CD", "Jira"],
+        application_url: "https://careers.wipro.com/wipro-002",
+      },
+    ],
+  },
+  {
+    name: "Razorpay",
+    url: "https://razorpay.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "rzp-001",
+        job_title: "Backend Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "18,00,000 - 30,00,000 INR per year",
+        description:
+          "Build highly available payment processing services using Go and Ruby. Design event-driven architectures and work with distributed systems at scale.",
+        required_skills: ["Go", "Ruby", "PostgreSQL", "Redis", "Microservices"],
+        application_url: "https://razorpay.com/jobs/rzp-001",
+      },
+      {
+        job_id: "rzp-002",
+        job_title: "Frontend Developer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "15,00,000 - 25,00,000 INR per year",
+        description:
+          "Develop intuitive payment dashboards and checkout experiences using React and TypeScript. Optimize for performance and accessibility across devices.",
+        required_skills: ["React", "TypeScript", "JavaScript", "CSS", "REST"],
+        application_url: "https://razorpay.com/jobs/rzp-002",
+      },
+    ],
+  },
+  {
+    name: "Zerodha",
+    url: "https://zerodha.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "zrd-001",
+        job_title: "Platform Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "20,00,000 - 35,00,000 INR per year",
+        description:
+          "Build and maintain low-latency trading infrastructure using Go and Python. Optimize systems for high-throughput order processing and real-time data streaming.",
+        required_skills: ["Go", "Python", "Linux", "PostgreSQL", "Redis"],
+        application_url: "https://zerodha.com/jobs/zrd-001",
+      },
+      {
+        job_id: "zrd-002",
+        job_title: "Data Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "18,00,000 - 28,00,000 INR per year",
+        description:
+          "Design and build data pipelines for financial analytics using Python and Spark. Manage large-scale data warehousing on PostgreSQL and ClickHouse.",
+        required_skills: ["Python", "Spark", "SQL", "ETL", "Data Engineering"],
+        application_url: "https://zerodha.com/jobs/zrd-002",
+      },
+    ],
+  },
+  {
+    name: "Flipkart",
+    url: "https://careers.flipkart.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "fk-001",
+        job_title: "ML Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "22,00,000 - 38,00,000 INR per year",
+        description:
+          "Build and deploy machine learning models for product recommendations and search ranking. Work with TensorFlow and PyTorch on large-scale datasets.",
+        required_skills: ["Python", "TensorFlow", "PyTorch", "Machine Learning", "SQL"],
+        application_url: "https://careers.flipkart.com/fk-001",
+      },
+      {
+        job_id: "fk-002",
+        job_title: "Mobile Developer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "16,00,000 - 26,00,000 INR per year",
+        description:
+          "Develop and optimize the Flipkart Android app for millions of users. Work with Kotlin, Jetpack Compose, and performance profiling tools.",
+        required_skills: ["Kotlin", "Android", "Jetpack Compose", "REST", "Git"],
+        application_url: "https://careers.flipkart.com/fk-002",
+      },
+    ],
+  },
+  {
+    name: "Freshworks",
+    url: "https://careers.freshworks.com/api/jobs.json",
+    mockData: [
+      {
+        job_id: "fw-001",
+        job_title: "Site Reliability Engineer",
+        job_location: "Chennai, India",
+        job_type: "Full-time",
+        salary: "14,00,000 - 24,00,000 INR per year",
+        description:
+          "Ensure uptime and performance of SaaS products serving millions of users. Manage Kubernetes clusters, implement observability with Prometheus and Grafana.",
+        required_skills: ["Kubernetes", "AWS", "Prometheus", "Terraform", "CI/CD"],
+        application_url: "https://careers.freshworks.com/fw-001",
+      },
+      {
+        job_id: "fw-002",
+        job_title: "Product Designer",
+        job_location: "Chennai, India",
+        job_type: "Full-time",
+        salary: "12,00,000 - 20,00,000 INR per year",
+        description:
+          "Own the design process for enterprise SaaS products. Conduct user research, create wireframes and prototypes in Figma, and collaborate with engineers.",
+        required_skills: ["Figma", "User Research", "Design Systems", "Prototyping", "UI/UX"],
+        application_url: "https://careers.freshworks.com/fw-002",
+      },
+    ],
+  },
+  {
+    name: "CRED",
+    url: "https://careers.cred.club/api/jobs.json",
+    mockData: [
+      {
+        job_id: "cred-001",
+        job_title: "iOS Developer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "20,00,000 - 35,00,000 INR per year",
+        description:
+          "Build premium mobile experiences for CRED's iOS app using Swift and SwiftUI. Focus on smooth animations, performance optimization, and clean architecture.",
+        required_skills: ["Swift", "iOS", "SwiftUI", "REST", "Git"],
+        application_url: "https://careers.cred.club/cred-001",
+      },
+      {
+        job_id: "cred-002",
+        job_title: "Backend Engineer",
+        job_location: "Bangalore, India",
+        job_type: "Full-time",
+        salary: "22,00,000 - 38,00,000 INR per year",
+        description:
+          "Design and build scalable backend services using Java and Spring Boot. Work with microservices architecture, Kafka, and distributed caching systems.",
+        required_skills: ["Java", "Spring Boot", "Kafka", "Microservices", "Redis"],
+        application_url: "https://careers.cred.club/cred-002",
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -318,6 +554,12 @@ const SKILLS_KEYWORDS = [
   "HTML", "CSS", "Sass", "Figma", "UI/UX", "Accessibility",
   "Data Science", "Data Engineering", "ETL", "Spark", "Hadoop",
   "Cybersecurity", "Networking", "Blockchain", "IoT",
+  // India-market popular technologies
+  "Spring Boot", "Hibernate", ".NET", "Jenkins", "SonarQube", "Jira",
+  "SAP", "Salesforce", "ServiceNow", "Power Automate", "Power BI",
+  "Ansible", "Grafana", "Prometheus", "Kafka", "RabbitMQ",
+  "Android", "iOS", "SwiftUI", "Jetpack Compose", "React Native",
+  "ClickHouse", "Cassandra", "GitLab CI", "Excel",
 ];
 
 function extractSkillsFromText(text: string): string[] {
@@ -345,6 +587,7 @@ interface NormalizedJob {
 }
 
 const ADZUNA_CATEGORIES = ["it-jobs", "engineering-jobs", "finance-jobs"];
+const ADZUNA_COUNTRIES = ["us", "in"];
 
 async function fetchAdzunaJobs(): Promise<NormalizedJob[]> {
   const appId = Deno.env.get("ADZUNA_APP_ID");
@@ -356,42 +599,46 @@ async function fetchAdzunaJobs(): Promise<NormalizedJob[]> {
 
   const allJobs: NormalizedJob[] = [];
 
-  for (const category of ADZUNA_CATEGORIES) {
-    try {
-      const url = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=50&category=${category}`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) {
-        console.error(`Adzuna ${category} error: HTTP ${res.status}`);
-        continue;
+  for (const country of ADZUNA_COUNTRIES) {
+    const currencySymbol = country === "in" ? "₹" : "$";
+
+    for (const category of ADZUNA_CATEGORIES) {
+      try {
+        const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=50&category=${category}`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) {
+          console.error(`Adzuna ${country}/${category} error: HTTP ${res.status}`);
+          continue;
+        }
+        const data = await res.json();
+        const results = data.results ?? [];
+
+        for (const job of results) {
+          const salaryParts: string[] = [];
+          if (job.salary_min) salaryParts.push(`${currencySymbol}${Math.round(job.salary_min).toLocaleString()}`);
+          if (job.salary_max) salaryParts.push(`${currencySymbol}${Math.round(job.salary_max).toLocaleString()}`);
+          const salary = salaryParts.length === 2 ? salaryParts.join(" - ") : salaryParts[0] || null;
+
+          allJobs.push({
+            title: job.title ?? "Untitled",
+            company: job.company?.display_name ?? "Unknown",
+            location: job.location?.display_name ?? "Unknown",
+            type: job.contract_time === "part_time" ? "Part-time" : "Full-time",
+            salary,
+            description: job.description ?? null,
+            skills: extractSkillsFromText(job.description ?? ""),
+            apply_url: job.redirect_url ?? `https://www.adzuna.com/details/${job.id}`,
+            external_id: `adzuna_${job.id}`,
+            source: "adzuna",
+            is_active: true,
+            posted_at: job.created ? new Date(job.created).toISOString() : new Date().toISOString(),
+          });
+        }
+
+        console.log(`Adzuna ${country}/${category}: fetched ${results.length} jobs`);
+      } catch (err) {
+        console.error(`Adzuna ${country}/${category} fetch error:`, err);
       }
-      const data = await res.json();
-      const results = data.results ?? [];
-
-      for (const job of results) {
-        const salaryParts: string[] = [];
-        if (job.salary_min) salaryParts.push(`$${Math.round(job.salary_min).toLocaleString()}`);
-        if (job.salary_max) salaryParts.push(`$${Math.round(job.salary_max).toLocaleString()}`);
-        const salary = salaryParts.length === 2 ? salaryParts.join(" - ") : salaryParts[0] || null;
-
-        allJobs.push({
-          title: job.title ?? "Untitled",
-          company: job.company?.display_name ?? "Unknown",
-          location: job.location?.display_name ?? "Unknown",
-          type: job.contract_time === "part_time" ? "Part-time" : "Full-time",
-          salary,
-          description: job.description ?? null,
-          skills: extractSkillsFromText(job.description ?? ""),
-          apply_url: job.redirect_url ?? `https://www.adzuna.com/details/${job.id}`,
-          external_id: `adzuna_${job.id}`,
-          source: "adzuna",
-          is_active: true,
-          posted_at: job.created ? new Date(job.created).toISOString() : new Date().toISOString(),
-        });
-      }
-
-      console.log(`Adzuna ${category}: fetched ${results.length} jobs`);
-    } catch (err) {
-      console.error(`Adzuna ${category} fetch error:`, err);
     }
   }
 
