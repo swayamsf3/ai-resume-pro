@@ -50,5 +50,35 @@ export const useAdminJobs = () => {
     },
   });
 
-  return { jobsQuery, ingestMutation };
+  const jsearchMutation = useMutation({
+    mutationFn: async ({ secret, seedMode = false }: { secret: string; seedMode?: boolean }) => {
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers: { "x-ingest-key": secret, "Content-Type": "application/json" },
+        body: JSON.stringify({ jsearchOnly: true, seedMode }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      const results = data.results as Record<string, { upserted: number; deactivated: number }> | undefined;
+      let description = "JSearch ingestion completed.";
+      if (results) {
+        const lines = Object.entries(results).map(
+          ([source, stats]) => `${source}: ${stats.upserted} upserted, ${stats.deactivated} deactivated`
+        );
+        description = lines.join("\n");
+      }
+      toast({ title: "JSearch ingestion complete", description });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "JSearch ingestion failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { jobsQuery, ingestMutation, jsearchMutation };
 };
