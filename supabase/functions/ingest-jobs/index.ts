@@ -141,7 +141,7 @@ async function fetchAdzunaJobs(seedMode: boolean): Promise<{ jobs: NormalizedJob
 
 const JSEARCH_SEED_QUERIES = ["developer India", "engineer India", "analyst India", "manager India", "designer India"];
 const JSEARCH_DAILY_QUERIES = ["developer India", "engineer India", "analyst India"];
-const MAX_JSEARCH_REQUESTS = 50;
+const MAX_JSEARCH_REQUESTS = 25;
 
 async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJob[]; apiRequests: number }> {
   const rapidApiKey = Deno.env.get("RAPIDAPI_KEY");
@@ -151,7 +151,7 @@ async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJo
   }
 
   const queries = seedMode ? JSEARCH_SEED_QUERIES : JSEARCH_DAILY_QUERIES;
-  const maxPages = seedMode ? 10 : 2;
+  const maxPages = seedMode ? 5 : 2;
   const allJobs: NormalizedJob[] = [];
   let apiRequests = 0;
 
@@ -220,7 +220,7 @@ async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJo
 
         console.log(`JSearch "${query}" page ${page}: fetched ${results.length} jobs`);
 
-        if (seedMode) await new Promise((r) => setTimeout(r, 300));
+        if (seedMode) await new Promise((r) => setTimeout(r, 500));
       } catch (err) {
         console.error(`JSearch "${query}" page ${page} fetch error:`, err);
       }
@@ -365,6 +365,27 @@ async function checkSeedCooldown(supabase: ReturnType<typeof createClient>): Pro
 }
 
 // ---------------------------------------------------------------------------
+// JSearch seed cooldown check (3-day protection)
+// ---------------------------------------------------------------------------
+
+async function checkJSearchSeedCooldown(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { count, error } = await supabase
+    .from("jobs")
+    .select("*", { count: "exact", head: true })
+    .eq("source", "jsearch")
+    .gte("created_at", threeDaysAgo);
+
+  if (error) {
+    console.error("JSearch seed cooldown check error:", error);
+    return false;
+  }
+
+  return (count ?? 0) > 200;
+}
+
+// ---------------------------------------------------------------------------
 // Cleanup: delete inactive jobs older than 60 days
 // ---------------------------------------------------------------------------
 
@@ -423,14 +444,26 @@ Deno.serve(async (req) => {
 
     // Seed mode cooldown check
     if (seedMode) {
-      const recentlySeeded = await checkSeedCooldown(supabase);
-      if (recentlySeeded) {
-        return new Response(
-          JSON.stringify({
-            error: "Seed mode was already run within the last 7 days. Use daily mode instead.",
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (jsearchOnly) {
+        const recentlySeeded = await checkJSearchSeedCooldown(supabase);
+        if (recentlySeeded) {
+          return new Response(
+            JSON.stringify({
+              error: "JSearch seed mode was already run within the last 3 days. Use daily mode instead.",
+            }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        const recentlySeeded = await checkSeedCooldown(supabase);
+        if (recentlySeeded) {
+          return new Response(
+            JSON.stringify({
+              error: "Seed mode was already run within the last 7 days. Use daily mode instead.",
+            }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     }
 
