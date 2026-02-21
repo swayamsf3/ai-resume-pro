@@ -167,7 +167,7 @@ const Auth = () => {
                 <FileText className="w-6 h-6 text-primary-foreground" />
               </div>
             </Link>
-            <CardTitle className="text-2xl font-display">Welcome to ResumeAI</CardTitle>
+            <CardTitle className="text-2xl font-display">Welcome to Ai Resume Builder</CardTitle>
             <CardDescription>
               Build professional resumes and find your dream job
             </CardDescription>
