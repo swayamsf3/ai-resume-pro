@@ -1,73 +1,37 @@
-## Add JSearch (RapidAPI) as a Third Job Source
 
-### Overview
+## Separate JSearch Seed Mode Limits
 
-Integrate the JSearch API from RapidAPI into the existing ingestion pipeline to significantly boost job count. JSearch aggregates listings from LinkedIn, Indeed, Glassdoor, and other major job boards, giving you access to thousands of additional Indian jobs.
+### Problem
+Currently, JSearch seed mode shares the same 7-day cooldown check as Adzuna, which only checks Adzuna job counts. This means JSearch seed mode can be blocked by Adzuna's cooldown or run without its own protection. The limits should be independent.
 
-### Setup Required
+### Changes
 
-**Step 1: Get your RapidAPI key**
+#### 1. Edge Function (`supabase/functions/ingest-jobs/index.ts`)
 
-1. Go to [https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch)
-2. Subscribe to the free tier (500 requests/month)
-3. Copy your RapidAPI key from the dashboard
+**Add a separate JSearch cooldown check:**
+- New `checkJSearchSeedCooldown()` function that checks `jsearch` source jobs created in the last 3 days (shorter cooldown than Adzuna's 7 days, since JSearch has a smaller footprint)
+- Threshold: if more than 200 jsearch jobs exist from the last 3 days, seed was recently run
 
-**Step 2: Save the key as a Supabase secret**
-The key will be stored securely as `RAPIDAPI_KEY` in your Supabase project secrets.
+**Update JSearch seed limits to differ from Adzuna:**
 
-### Changes to `supabase/functions/ingest-jobs/index.ts`
+| Setting | Adzuna Seed | JSearch Seed |
+|---------|-------------|--------------|
+| Queries | 5 categories | 5 queries |
+| Max pages | 20 | 5 (reduced from 10) |
+| Request cap | 80 | 25 (reduced from 50) |
+| Cooldown | 7 days | 3 days |
+| Delay | 300ms | 500ms |
 
-#### New JSearch Fetcher Function
+**Skip Adzuna cooldown for JSearch-only requests:**
+- When `jsearchOnly` is true, only run `checkJSearchSeedCooldown()` instead of the Adzuna cooldown
 
-Add a `fetchJSearchJobs()` function that:
+#### 2. Admin UI (`src/pages/AdminJobs.tsx`)
 
-- Searches for Indian jobs using queries like "developer India", "engineer India", "analyst India", "manager India", "designer India"
-- Seed mode: 5 queries x 10 pages (20 results each) = up to 50 requests, ~1,000 jobs
-- Daily mode: 3 queries x 2 pages = 6 requests, ~120 jobs
-- Normalizes results into the existing `NormalizedJob` format
-- Uses `external_id: jsearch_{job_id}` for deduplication
-- Extracts skills from descriptions using existing `extractSkillsFromText()`
-- Respects a 300ms delay between requests in seed mode
-
-#### JSearch API Details
-
-- Endpoint: `https://jsearch.p.rapidapi.com/search`
-- Parameters: `query`, `page`, `num_pages`, `country=IN`
-- Headers: `X-RapidAPI-Key`, `X-RapidAPI-Host: jsearch.p.rapidapi.com`
-- Returns: title, company, location, description, salary, apply link
-
-#### Main Handler Updates
-
-- Add JSearch to the parallel fetch alongside Adzuna and The Muse
-- Upsert JSearch jobs with source "jsearch"
-- Include JSearch stats in the response
-
-### Expected Job Counts After Integration
-
-
-| Source        | Seed Mode       | Daily Mode            |
-| ------------- | --------------- | --------------------- |
-| Adzuna India  | 3,000-4,000     | ~300 refresh          |
-| The Muse      | ~100            | ~100                  |
-| JSearch (new) | ~800-1,000      | ~120 refresh          |
-| **Total**     | **4,000-5,100** | Maintains + refreshes |
-
-
-### Request Budget
-
-
-| Mode  | Adzuna   | Muse | JSearch  | Total |
-| ----- | -------- | ---- | -------- | ----- |
-| Seed  | Up to 80 | 5    | Up to 50 | 135   |
-| Daily | 6        | 5    | 6        | 17    |
-
-
-The free JSearch tier allows 500 requests/month, so daily mode (6 requests/day x 30 days = 180) fits comfortably.
+- Update the JSearch seed mode label to reflect the new limits: "Seed Mode (5 queries x 5 pages -- up to 25 API requests, 3-day cooldown)"
 
 ### Technical Details
 
-- **File modified**: `supabase/functions/ingest-jobs/index.ts` -- add the JSearch fetcher and wire it into the main handler
-- **Secret needed**: `RAPIDAPI_KEY` -- will be added via Supabase secrets
-- **No database changes needed** -- jobs table schema already supports the new source  
-  
-Just GIVE Seperate injestion button we  want a seperate injest button for jsearch api
+- **Files modified**: `supabase/functions/ingest-jobs/index.ts`, `src/pages/AdminJobs.tsx`
+- Constants changed: `MAX_JSEARCH_REQUESTS` from 50 to 25, `maxPages` for JSearch seed from 10 to 5
+- New function: `checkJSearchSeedCooldown()` with 3-day window and 200-job threshold
+- The main handler will route to the correct cooldown check based on `jsearchOnly` flag
