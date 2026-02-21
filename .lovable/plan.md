@@ -1,59 +1,74 @@
+## Clean Up Ingestion: Real Indian Jobs Only
+
+### What Changes
+
+**File: `supabase/functions/ingest-jobs/index.ts**` (complete rewrite of the function)
+
+### 1. Remove All Mock Feeds
+
+- Delete the entire `FEEDS` array (TechCorp, DataWorks, DesignHub, FinanceFirst, HealthTech, GreenEnergy, MediaStack, Infosys, TCS, Wipro, Razorpay, Zerodha, Flipkart, Freshworks, CRED)
+- Delete `FeedConfig`, `FeedJob` interfaces
+- Delete `fetchFeedJobs()` and `normalizeJob()` helper functions
+- Remove the mock feed processing loop from the main handler (lines 829-871)
+
+### 2. Adzuna: India Only, Two Modes
+
+**Seed Mode** (triggered by passing `seedMode: true` in the POST body):
+
+- Country: India only (`in`)
+- Categories: `it-jobs`, `engineering-jobs`, `accounting-finance-jobs`, `hr-jobs`, `consultancy-jobs` (5 total)
+- Pages: 1 through 20 per category
+- Max requests: 5 categories x 20 pages = 100, but capped at 80 with an early-exit counter
+- 300ms delay between page fetches
+- Logs total API requests used
+
+**Daily Mode** (default, `seedMode: false`):
+
+- Country: India only (`in`)
+- Categories: `it-jobs`, `engineering-jobs` (2 total)
+- Pages: 1 through 3 per category
+- Max requests: 2 x 3 = 6
+- No extra delay needed (small number of requests)
+
+### 3. The Muse: Cap at 5 Pages
+
+- Change loop from `page < 2` to `page < 5`
+
+### 4. Cleanup Step
+
+- After upsert/deactivate, permanently delete jobs where `is_active = false` AND `created_at` is older than 60 days
+
+### 5. Remove US Fetching
+
+- Remove `"us"` from countries entirely
+- Remove the `ADZUNA_COUNTRIES` array, hardcode `"in"`
+
+### Expected Request Budget Per Run
 
 
-## Bring More Indian Jobs Into Your Database
+| Mode  | Adzuna Requests | Muse Requests | Total |
+| ----- | --------------- | ------------- | ----- |
+| Seed  | Up to 80        | 5             | 85    |
+| Daily | 6               | 5             | 11    |
 
-### Current State
-Your ingestion pipeline fetches jobs from:
-- **Adzuna** (US only - `api/jobs/us/search`)
-- **The Muse** (global, mostly US-focused)
-- **Mock employer feeds** (hardcoded US-based companies)
 
-### Strategy to Get Indian Jobs
+### Expected Job Counts
 
-#### 1. Adzuna India Support (Quick Win)
-Adzuna already supports India. We just need to change the country code from `us` to `in` (or fetch both). This will immediately bring in real Indian tech jobs from Adzuna's India listings.
 
-- Fetch from both `api/jobs/us/search` AND `api/jobs/in/search`
-- Add India-relevant categories like `"it-jobs"`, `"engineering-jobs"`
-- Adjust salary formatting from `$` to INR
+| Source       | Seed Mode       | Daily Mode            |
+| ------------ | --------------- | --------------------- |
+| Adzuna India | 3,000-4,000     | Refreshes top ~300    |
+| The Muse     | ~100            | ~100                  |
+| **Total**    | **3,100-4,100** | Maintains + refreshes |
 
-#### 2. Add Indian Mock Employer Feeds
-Add curated job data from well-known Indian companies and startups as mock feeds (similar to the existing TechCorp, DataWorks pattern). These serve as seed data and can later be replaced with real career page scraping.
 
-Companies to include:
-- **Infosys** - Software Engineer, Data Analyst roles (Bangalore, Pune, Hyderabad)
-- **TCS** - Full Stack Developer, Cloud Engineer roles (Mumbai, Chennai)
-- **Wipro** - DevOps Engineer, QA roles (Bangalore, Noida)
-- **Razorpay** - Backend Engineer, Frontend Developer (Bangalore)
-- **Zerodha** - Platform Engineer, Data Engineer (Bangalore)
-- **Flipkart** - ML Engineer, Mobile Developer (Bangalore)
-- **Freshworks** - SRE, Product Designer (Chennai)
-- **CRED** - iOS/Android Developer, Backend Engineer (Bangalore)
+### How to Use
 
-Each company will have 2-3 realistic job listings with Indian locations, INR salaries, and relevant skills.
+1. **First run**: Send POST with body `{"seedMode": true}` to bulk-load jobs
+2. **Daily runs**: Normal POST (no body or `seedMode: false`) to refresh latest listings and clean up expired ones
 
-#### 3. Add India-Specific Skills Keywords
-Expand the `SKILLS_KEYWORDS` list with technologies popular in Indian job market:
-- Frameworks: Spring Boot, Hibernate, .NET
-- Tools: Jenkins, SonarQube, Jira
-- Skills: SAP, Salesforce, ServiceNow, Power Automate
+### Technical Detail: Seed Mode Activation
 
-### Technical Changes
-
-**File: `supabase/functions/ingest-jobs/index.ts`**
-
-1. **Modify `fetchAdzunaJobs()`** to fetch from both US and India endpoints in parallel
-2. **Add 8 new Indian company mock feeds** to the `FEEDS` array with realistic India-based job listings (salaries in INR format like "12,00,000 - 18,00,000 per year")
-3. **Expand `SKILLS_KEYWORDS`** with India-market-relevant technologies
-4. **Deploy** the updated edge function
-
-### What Stays the Same
-- The Muse fetcher (already global)
-- Upsert/deactivate logic
-- Admin dashboard and ingestion trigger
-- Database schema (no changes needed)
-- All existing US jobs remain untouched
-
-### Future Enhancement (Not in This Plan)
-For scraping real company career pages (e.g., careers.google.com, careers.infosys.com), you could use the Firecrawl connector to scrape career pages periodically. That would be a separate feature to build later.
-
+The `seedMode` flag is read from the request JSON body. The admin panel's "Run Ingestion" button currently sends no body, so it defaults to daily mode. To trigger seed mode, you would call the function directly or we can add a checkbox to the admin UI.  
+  
+Add protection so seedMode cannot be executed more than once within 7 days.
