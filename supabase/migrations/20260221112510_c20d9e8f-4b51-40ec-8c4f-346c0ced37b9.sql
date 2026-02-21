@@ -1,0 +1,1 @@
+UPDATE jobs SET is_active = true WHERE is_active = false AND source IN ('adzuna', 'jsearch', 'themuse');
