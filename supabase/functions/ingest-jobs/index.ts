@@ -141,7 +141,7 @@ async function fetchAdzunaJobs(seedMode: boolean): Promise<{ jobs: NormalizedJob
 
 const JSEARCH_SEED_QUERIES = ["developer India", "engineer India", "analyst India", "manager India", "designer India"];
 const JSEARCH_DAILY_QUERIES = ["developer India", "engineer India", "analyst India"];
-const MAX_JSEARCH_REQUESTS = 25;
+const MAX_JSEARCH_REQUESTS = 15;
 
 async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJob[]; apiRequests: number }> {
   const rapidApiKey = Deno.env.get("RAPIDAPI_KEY");
@@ -151,7 +151,7 @@ async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJo
   }
 
   const queries = seedMode ? JSEARCH_SEED_QUERIES : JSEARCH_DAILY_QUERIES;
-  const maxPages = seedMode ? 5 : 2;
+  const maxPages = seedMode ? 3 : 2;
   const allJobs: NormalizedJob[] = [];
   let apiRequests = 0;
 
@@ -169,7 +169,7 @@ async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJo
             "X-RapidAPI-Key": rapidApiKey,
             "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
           },
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(8000),
         });
         apiRequests++;
 
