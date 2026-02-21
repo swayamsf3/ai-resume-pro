@@ -1,44 +1,37 @@
 
 
-## Restrict Phone Input Length Without Country Code
+## Reduce AI Project Description Output
 
 ### Change
 
-**`src/components/builder/ResumeForm.tsx`**
+**`supabase/functions/generate-resume-content/index.ts`**
 
-Update `handlePhoneChange` to enforce a max length based on whether the input starts with `+`:
-- If input starts with `+`: allow up to 13 characters (e.g. `+91 9876543210`)
-- If input does NOT start with `+`: limit to 10 digits only
-
-Update `validatePhone` to accept both formats:
-- With country code: `/^\+\d{2}\s?\d{10}$/` (existing)
-- Without country code: `/^\d{10}$/` (new)
+Update the system prompt for the "project" type to request:
+- Exactly 4 bullet points (instead of 4-6)
+- Each bullet limited to approximately 10 words (instead of 20-30)
+- Reduce overall word count target accordingly (around 40-50 words total)
 
 ### Technical Detail
 
-```text
-const handlePhoneChange = (value: string) => {
-  const sanitized = value.replace(/[^\d+\s]/g, "");
-  // If no country code, limit to 10 digits
-  if (!sanitized.startsWith("+")) {
-    const digitsOnly = sanitized.replace(/\D/g, "");
-    if (digitsOnly.length > 10) return; // block further input
-  }
-  updatePersonalInfo("phone", sanitized);
-  if (phoneError) setPhoneError("");
-};
+Update the system prompt and user prompt in the project generation block:
 
-const validatePhone = (value: string) => {
-  if (!value.trim()) { setPhoneError(""); return; }
-  const withCode = /^\+\d{2}\s?\d{10}$/;
-  const withoutCode = /^\d{10}$/;
-  if (!withCode.test(value.trim()) && !withoutCode.test(value.trim())) {
-    setPhoneError("Enter valid phone: +91 9876543210 or 9876543210");
-  } else {
-    setPhoneError("");
-  }
-};
+```text
+// System prompt change
+systemPrompt = `You are a professional resume writer. Generate exactly 4 bullet points 
+for a resume project description. Each bullet must be around 10 words and start with a 
+strong action verb. Describe key features, technologies used, and the problem solved. 
+Do NOT invent specific metrics or percentages. Use the bullet character to separate 
+bullets. Output ONLY the bullet points.`;
+
+// User prompt change
+userPrompt = `Write bullet points for a resume project:
+Project Name: ${projectData.name || "Project"}
+Technologies: ${projectData.technologies || "modern technologies"}
+Remember: exactly 4 bullets, each bullet around 10 words. Be concise.`;
 ```
 
 ### What stays the same
-- All other form fields, resume data structure, and preview rendering
+- Summary generation logic unchanged
+- API key handling, error handling, CORS headers all unchanged
+- Model and temperature settings unchanged
+
