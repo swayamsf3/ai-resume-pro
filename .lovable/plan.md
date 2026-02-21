@@ -1,37 +1,50 @@
 
-## Separate JSearch Seed Mode Limits
+
+## Fix 1000-Row Query Limit
 
 ### Problem
-Currently, JSearch seed mode shares the same 7-day cooldown check as Adzuna, which only checks Adzuna job counts. This means JSearch seed mode can be blocked by Adzuna's cooldown or run without its own protection. The limits should be independent.
+Supabase returns a maximum of 1000 rows per query by default. Since the database now has more than 1000 active jobs, users only see 1000 jobs on the Jobs page, and the admin dashboard is similarly limited.
 
 ### Changes
 
-#### 1. Edge Function (`supabase/functions/ingest-jobs/index.ts`)
+#### 1. Edge Function: `supabase/functions/match-jobs/index.ts`
+- Replace the single `.select("*")` call with a **paginated loop** that fetches all active jobs in batches of 1000
+- This ensures all jobs are fetched, scored, and returned to the user
 
-**Add a separate JSearch cooldown check:**
-- New `checkJSearchSeedCooldown()` function that checks `jsearch` source jobs created in the last 3 days (shorter cooldown than Adzuna's 7 days, since JSearch has a smaller footprint)
-- Threshold: if more than 200 jsearch jobs exist from the last 3 days, seed was recently run
+#### 2. Edge Function: `supabase/functions/ingest-jobs/index.ts`
+- Update the stale-job query in `upsertAndDeactivate()` to use **paginated fetching** so deactivation works correctly beyond 1000 rows
 
-**Update JSearch seed limits to differ from Adzuna:**
-
-| Setting | Adzuna Seed | JSearch Seed |
-|---------|-------------|--------------|
-| Queries | 5 categories | 5 queries |
-| Max pages | 20 | 5 (reduced from 10) |
-| Request cap | 80 | 25 (reduced from 50) |
-| Cooldown | 7 days | 3 days |
-| Delay | 300ms | 500ms |
-
-**Skip Adzuna cooldown for JSearch-only requests:**
-- When `jsearchOnly` is true, only run `checkJSearchSeedCooldown()` instead of the Adzuna cooldown
-
-#### 2. Admin UI (`src/pages/AdminJobs.tsx`)
-
-- Update the JSearch seed mode label to reflect the new limits: "Seed Mode (5 queries x 5 pages -- up to 25 API requests, 3-day cooldown)"
+#### 3. Hook: `src/hooks/useAdminJobs.ts`
+- Add `.range(0, 4999)` or implement pagination to allow the admin dashboard to display more than 1000 jobs
+- Alternatively, fetch only a count + recent subset for performance
 
 ### Technical Details
 
-- **Files modified**: `supabase/functions/ingest-jobs/index.ts`, `src/pages/AdminJobs.tsx`
-- Constants changed: `MAX_JSEARCH_REQUESTS` from 50 to 25, `maxPages` for JSearch seed from 10 to 5
-- New function: `checkJSearchSeedCooldown()` with 3-day window and 200-job threshold
-- The main handler will route to the correct cooldown check based on `jsearchOnly` flag
+**match-jobs pagination pattern:**
+```typescript
+// Fetch all active jobs in pages of 1000
+let allJobs: Job[] = [];
+let from = 0;
+const PAGE_SIZE = 1000;
+while (true) {
+  const { data, error } = await supabaseAdmin
+    .from("jobs")
+    .select("*")
+    .eq("is_active", true)
+    .order("posted_at", { ascending: false })
+    .range(from, from + PAGE_SIZE - 1);
+  if (error) throw error;
+  allJobs = allJobs.concat(data || []);
+  if (!data || data.length < PAGE_SIZE) break;
+  from += PAGE_SIZE;
+}
+```
+
+**Admin jobs query** will use `.range(0, 4999)` to raise the limit to 5000 for the dashboard view.
+
+**Stale jobs query** in `ingest-jobs` will use the same paginated pattern to ensure all stale jobs are found and deactivated.
+
+**Files modified:**
+- `supabase/functions/match-jobs/index.ts`
+- `supabase/functions/ingest-jobs/index.ts`
+- `src/hooks/useAdminJobs.ts`
