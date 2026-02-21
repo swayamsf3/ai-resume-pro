@@ -106,14 +106,10 @@ const Dashboard = () => {
 
           {/* Stats Grid */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="border-border hover:shadow-lg transition-shadow">
+            {stats.map((stat, index) => {
+              const isJobsSaved = stat.label === "Jobs Saved";
+              const cardContent = (
+                <Card className={`border-border hover:shadow-lg transition-shadow ${isJobsSaved ? "cursor-pointer" : ""}`}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -128,8 +124,22 @@ const Dashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
-            ))}
+              );
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  {isJobsSaved ? (
+                    <Link to="/jobs?filter=saved">{cardContent}</Link>
+                  ) : (
+                    cardContent
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* Main Content Grid */}

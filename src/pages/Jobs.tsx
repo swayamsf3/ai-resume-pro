@@ -3,7 +3,7 @@ import Header from "@/components/layout/Header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Search, Sparkles, Loader2, MapPin } from "lucide-react";
+import { Search, Sparkles, Loader2, MapPin, Bookmark } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useJobMatches } from "@/hooks/useJobMatches";
@@ -13,20 +13,24 @@ import { JobCard } from "@/components/jobs/JobCard";
 import { ResumeStatus } from "@/components/jobs/ResumeStatus";
 import { ResumeUploader } from "@/components/jobs/ResumeUploader";
 import { SkillsEditor } from "@/components/jobs/SkillsEditor";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
  
 const Jobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [showUploader, setShowUploader] = useState(false);
   const [showSkillsEditor, setShowSkillsEditor] = useState(false);
   const [minMatchPercentage, setMinMatchPercentage] = useState(0);
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [showSavedOnly, setShowSavedOnly] = useState(
+    searchParams.get("filter") === "saved"
+  );
 
   const { data: jobData, isLoading: jobsLoading } = useJobMatches();
-  const { isJobSaved, toggleSaveJob } = useSavedJobs();
+  const { savedJobIds, isJobSaved, toggleSaveJob } = useSavedJobs();
   const { hasResume, syncFromBuilder } = useUserResume();
  
    useEffect(() => {
@@ -48,6 +52,11 @@ const Jobs = () => {
   ).sort();
 
   const filteredJobs = jobs.filter((job) => {
+    // Saved filter
+    if (showSavedOnly && !savedJobIds.includes(job.id)) {
+      return false;
+    }
+
     // Match percentage filter
     if (hasResume && job.match_percentage < minMatchPercentage) {
       return false;
@@ -179,26 +188,37 @@ const Jobs = () => {
                  </Select>
                </div>
               
-              {/* Match Percentage Filter */}
-              {hasResume && (
-                <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                  {[
-                    { label: "All Jobs", value: 0 },
-                    { label: "50%+", value: 50 },
-                    { label: "60%+", value: 60 },
-                    { label: "70%+", value: 70 },
-                  ].map((filter) => (
-                    <Button
-                      key={filter.value}
-                      variant={minMatchPercentage === filter.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setMinMatchPercentage(filter.value)}
-                    >
-                      {filter.label}
-                    </Button>
-                  ))}
-                </div>
-              )}
+               {/* Filter Buttons */}
+               <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                 <Button
+                   variant={showSavedOnly ? "default" : "outline"}
+                   size="sm"
+                   className="gap-2"
+                   onClick={() => setShowSavedOnly(!showSavedOnly)}
+                 >
+                   <Bookmark className={`w-4 h-4 ${showSavedOnly ? "fill-current" : ""}`} />
+                   Saved Jobs
+                 </Button>
+                 {hasResume && (
+                   <>
+                     {[
+                       { label: "All Jobs", value: 0 },
+                       { label: "50%+", value: 50 },
+                       { label: "60%+", value: 60 },
+                       { label: "70%+", value: 70 },
+                     ].map((filter) => (
+                       <Button
+                         key={filter.value}
+                         variant={minMatchPercentage === filter.value ? "default" : "outline"}
+                         size="sm"
+                         onClick={() => setMinMatchPercentage(filter.value)}
+                       >
+                         {filter.label}
+                       </Button>
+                     ))}
+                   </>
+                 )}
+               </div>
             </motion.div>
  
            {/* Results count */}
