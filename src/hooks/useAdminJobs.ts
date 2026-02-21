@@ -21,10 +21,11 @@ export const useAdminJobs = () => {
   });
 
   const ingestMutation = useMutation({
-    mutationFn: async (secret: string) => {
+    mutationFn: async ({ secret, seedMode = false }: { secret: string; seedMode?: boolean }) => {
       const res = await fetch(EDGE_FUNCTION_URL, {
         method: "POST",
-        headers: { "x-ingest-key": secret },
+        headers: { "x-ingest-key": secret, "Content-Type": "application/json" },
+        body: JSON.stringify({ seedMode }),
       });
       if (!res.ok) {
         const body = await res.text();
