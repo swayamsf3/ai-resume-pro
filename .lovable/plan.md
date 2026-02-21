@@ -1,50 +1,44 @@
 
 
-## Fix 1000-Row Query Limit
+## Fix: Prevent Daily Mode from Mass-Deactivating Seeded Jobs
 
-### Problem
-Supabase returns a maximum of 1000 rows per query by default. Since the database now has more than 1000 active jobs, users only see 1000 jobs on the Jobs page, and the admin dashboard is similarly limited.
+### Root Cause
+The `upsertAndDeactivate` function deactivates all active jobs from a source that are NOT in the current fetch batch. This worked fine when limited to 1000 rows, but now with paginated fetching, daily mode (which fetches only ~300 jobs) correctly finds and deactivates ALL other active jobs from that source -- wiping out thousands of seeded jobs.
+
+### Solution
+Only run the deactivation logic when in **seed mode**. In daily mode, we should only upsert new/updated jobs without deactivating old ones. Seeded jobs should remain active until the next seed run replaces them or they expire via the 60-day cleanup.
 
 ### Changes
 
-#### 1. Edge Function: `supabase/functions/match-jobs/index.ts`
-- Replace the single `.select("*")` call with a **paginated loop** that fetches all active jobs in batches of 1000
-- This ensures all jobs are fetched, scored, and returned to the user
+#### 1. Edge Function: `supabase/functions/ingest-jobs/index.ts`
 
-#### 2. Edge Function: `supabase/functions/ingest-jobs/index.ts`
-- Update the stale-job query in `upsertAndDeactivate()` to use **paginated fetching** so deactivation works correctly beyond 1000 rows
+- Add a `deactivateStale` parameter to `upsertAndDeactivate`
+- Pass `deactivateStale: true` only in seed mode, `false` in daily mode
+- When `deactivateStale` is false, skip the stale-job query and deactivation entirely
 
-#### 3. Hook: `src/hooks/useAdminJobs.ts`
-- Add `.range(0, 4999)` or implement pagination to allow the admin dashboard to display more than 1000 jobs
-- Alternatively, fetch only a count + recent subset for performance
+#### 2. Re-activate the 4,146 deactivated jobs
+
+- Run a SQL query to set `is_active = true` for all recently deactivated jobs (those deactivated in the last hour that were originally from the seed run)
 
 ### Technical Details
 
-**match-jobs pagination pattern:**
-```typescript
-// Fetch all active jobs in pages of 1000
-let allJobs: Job[] = [];
-let from = 0;
-const PAGE_SIZE = 1000;
-while (true) {
-  const { data, error } = await supabaseAdmin
-    .from("jobs")
-    .select("*")
-    .eq("is_active", true)
-    .order("posted_at", { ascending: false })
-    .range(from, from + PAGE_SIZE - 1);
-  if (error) throw error;
-  allJobs = allJobs.concat(data || []);
-  if (!data || data.length < PAGE_SIZE) break;
-  from += PAGE_SIZE;
-}
+**Modified function signature:**
+```text
+async function upsertAndDeactivate(
+  supabase, source, jobs, label, deactivateStale = true
+)
 ```
 
-**Admin jobs query** will use `.range(0, 4999)` to raise the limit to 5000 for the dashboard view.
+**Call sites updated:**
+- Seed mode: `upsertAndDeactivate(supabase, "adzuna", jobs, "Adzuna", true)`
+- Daily mode: `upsertAndDeactivate(supabase, "adzuna", jobs, "Adzuna", false)`
 
-**Stale jobs query** in `ingest-jobs` will use the same paginated pattern to ensure all stale jobs are found and deactivated.
+**Recovery SQL:**
+```sql
+UPDATE jobs SET is_active = true WHERE is_active = false AND source IN ('adzuna','jsearch') AND created_at < now() - interval '1 hour';
+```
 
 **Files modified:**
-- `supabase/functions/match-jobs/index.ts`
 - `supabase/functions/ingest-jobs/index.ts`
-- `src/hooks/useAdminJobs.ts`
+- One-time SQL migration to restore deactivated jobs
+
