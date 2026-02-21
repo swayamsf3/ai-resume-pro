@@ -25,6 +25,7 @@ const AdminJobs = () => {
   const { jobsQuery, ingestMutation, jsearchMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
+  const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
 
   useEffect(() => {
@@ -141,15 +142,24 @@ const AdminJobs = () => {
                 className="sm:max-w-xs"
               />
               <Button
-                onClick={() => jsearchMutation.mutate({ secret, seedMode })}
+                onClick={() => jsearchMutation.mutate({ secret, seedMode: jsearchSeedMode })}
                 disabled={!secret || jsearchMutation.isPending}
                 variant="secondary"
                 className="gap-2"
               >
                 {jsearchMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                {seedMode ? "Run JSearch Seed" : "Run JSearch Daily"}
+                {jsearchSeedMode ? "Run JSearch Seed" : "Run JSearch Daily"}
               </Button>
             </div>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={jsearchSeedMode}
+                onChange={(e) => setJsearchSeedMode(e.target.checked)}
+                className="rounded"
+              />
+              Seed Mode (5 queries x 10 pages — up to 50 API requests)
+            </label>
             <p className="text-xs text-muted-foreground">
               Fetches jobs from JSearch (RapidAPI) independently. Free tier: 500 requests/month.
             </p>
