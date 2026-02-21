@@ -24,6 +24,7 @@ const AdminJobs = () => {
   const navigate = useNavigate();
   const { jobsQuery, ingestMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
+  const [seedMode, setSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
 
   useEffect(() => {
@@ -90,22 +91,33 @@ const AdminJobs = () => {
           <CardHeader>
             <CardTitle className="text-lg">Trigger Ingestion</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-3">
-            <Input
-              type="password"
-              placeholder="INGEST_SECRET"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              className="sm:max-w-xs"
-            />
-            <Button
-              onClick={() => ingestMutation.mutate(secret)}
-              disabled={!secret || ingestMutation.isPending}
-              className="gap-2"
-            >
-              {ingestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              Run Ingestion
-            </Button>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                type="password"
+                placeholder="INGEST_SECRET"
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                className="sm:max-w-xs"
+              />
+              <Button
+                onClick={() => ingestMutation.mutate({ secret, seedMode })}
+                disabled={!secret || ingestMutation.isPending}
+                className="gap-2"
+              >
+                {ingestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                {seedMode ? "Run Seed Ingestion" : "Run Daily Ingestion"}
+              </Button>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={seedMode}
+                onChange={(e) => setSeedMode(e.target.checked)}
+                className="rounded"
+              />
+              Seed Mode (bulk load 4,000+ jobs — can only run once per 7 days)
+            </label>
           </CardContent>
         </Card>
 
