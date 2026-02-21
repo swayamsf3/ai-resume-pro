@@ -1,37 +1,59 @@
 
 
-## Reduce AI Project Description Output
+## Bring More Indian Jobs Into Your Database
 
-### Change
+### Current State
+Your ingestion pipeline fetches jobs from:
+- **Adzuna** (US only - `api/jobs/us/search`)
+- **The Muse** (global, mostly US-focused)
+- **Mock employer feeds** (hardcoded US-based companies)
 
-**`supabase/functions/generate-resume-content/index.ts`**
+### Strategy to Get Indian Jobs
 
-Update the system prompt for the "project" type to request:
-- Exactly 4 bullet points (instead of 4-6)
-- Each bullet limited to approximately 10 words (instead of 20-30)
-- Reduce overall word count target accordingly (around 40-50 words total)
+#### 1. Adzuna India Support (Quick Win)
+Adzuna already supports India. We just need to change the country code from `us` to `in` (or fetch both). This will immediately bring in real Indian tech jobs from Adzuna's India listings.
 
-### Technical Detail
+- Fetch from both `api/jobs/us/search` AND `api/jobs/in/search`
+- Add India-relevant categories like `"it-jobs"`, `"engineering-jobs"`
+- Adjust salary formatting from `$` to INR
 
-Update the system prompt and user prompt in the project generation block:
+#### 2. Add Indian Mock Employer Feeds
+Add curated job data from well-known Indian companies and startups as mock feeds (similar to the existing TechCorp, DataWorks pattern). These serve as seed data and can later be replaced with real career page scraping.
 
-```text
-// System prompt change
-systemPrompt = `You are a professional resume writer. Generate exactly 4 bullet points 
-for a resume project description. Each bullet must be around 10 words and start with a 
-strong action verb. Describe key features, technologies used, and the problem solved. 
-Do NOT invent specific metrics or percentages. Use the bullet character to separate 
-bullets. Output ONLY the bullet points.`;
+Companies to include:
+- **Infosys** - Software Engineer, Data Analyst roles (Bangalore, Pune, Hyderabad)
+- **TCS** - Full Stack Developer, Cloud Engineer roles (Mumbai, Chennai)
+- **Wipro** - DevOps Engineer, QA roles (Bangalore, Noida)
+- **Razorpay** - Backend Engineer, Frontend Developer (Bangalore)
+- **Zerodha** - Platform Engineer, Data Engineer (Bangalore)
+- **Flipkart** - ML Engineer, Mobile Developer (Bangalore)
+- **Freshworks** - SRE, Product Designer (Chennai)
+- **CRED** - iOS/Android Developer, Backend Engineer (Bangalore)
 
-// User prompt change
-userPrompt = `Write bullet points for a resume project:
-Project Name: ${projectData.name || "Project"}
-Technologies: ${projectData.technologies || "modern technologies"}
-Remember: exactly 4 bullets, each bullet around 10 words. Be concise.`;
-```
+Each company will have 2-3 realistic job listings with Indian locations, INR salaries, and relevant skills.
 
-### What stays the same
-- Summary generation logic unchanged
-- API key handling, error handling, CORS headers all unchanged
-- Model and temperature settings unchanged
+#### 3. Add India-Specific Skills Keywords
+Expand the `SKILLS_KEYWORDS` list with technologies popular in Indian job market:
+- Frameworks: Spring Boot, Hibernate, .NET
+- Tools: Jenkins, SonarQube, Jira
+- Skills: SAP, Salesforce, ServiceNow, Power Automate
+
+### Technical Changes
+
+**File: `supabase/functions/ingest-jobs/index.ts`**
+
+1. **Modify `fetchAdzunaJobs()`** to fetch from both US and India endpoints in parallel
+2. **Add 8 new Indian company mock feeds** to the `FEEDS` array with realistic India-based job listings (salaries in INR format like "12,00,000 - 18,00,000 per year")
+3. **Expand `SKILLS_KEYWORDS`** with India-market-relevant technologies
+4. **Deploy** the updated edge function
+
+### What Stays the Same
+- The Muse fetcher (already global)
+- Upsert/deactivate logic
+- Admin dashboard and ingestion trigger
+- Database schema (no changes needed)
+- All existing US jobs remain untouched
+
+### Future Enhancement (Not in This Plan)
+For scraping real company career pages (e.g., careers.google.com, careers.infosys.com), you could use the Firecrawl connector to scrape career pages periodically. That would be a separate feature to build later.
 
