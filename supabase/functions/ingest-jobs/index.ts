@@ -310,30 +310,45 @@ async function upsertAndDeactivate(
 
   const currentExternalIds = jobs.map((j) => j.external_id);
 
-  // Query stale jobs in batches too (Supabase has query limits)
-  const { data: staleJobs, error: staleError } = await supabase
-    .from("jobs")
-    .select("id, external_id")
-    .eq("source", source)
-    .eq("is_active", true)
-    .not("external_id", "in", `(${currentExternalIds.join(",")})`);
+  // Query stale jobs with pagination (Supabase 1000-row limit)
+  const STALE_PAGE = 1000;
+  let allStaleJobs: { id: string; external_id: string }[] = [];
+  let staleFrom = 0;
+  while (true) {
+    const { data, error: staleError } = await supabase
+      .from("jobs")
+      .select("id, external_id")
+      .eq("source", source)
+      .eq("is_active", true)
+      .not("external_id", "in", `(${currentExternalIds.join(",")})`)
+      .range(staleFrom, staleFrom + STALE_PAGE - 1);
 
-  if (staleError) {
-    console.error(`Stale query error for ${label}:`, staleError);
+    if (staleError) {
+      console.error(`Stale query error for ${label}:`, staleError);
+      break;
+    }
+
+    allStaleJobs = allStaleJobs.concat(data || []);
+    if (!data || data.length < STALE_PAGE) break;
+    staleFrom += STALE_PAGE;
   }
 
   let deactivated = 0;
-  if (staleJobs && staleJobs.length > 0) {
-    const staleIds = staleJobs.map((j) => j.id);
-    const { error: deactivateError } = await supabase
-      .from("jobs")
-      .update({ is_active: false })
-      .in("id", staleIds);
+  if (allStaleJobs.length > 0) {
+    const staleIds = allStaleJobs.map((j) => j.id);
+    // Deactivate in batches of 500
+    for (let i = 0; i < staleIds.length; i += 500) {
+      const batch = staleIds.slice(i, i + 500);
+      const { error: deactivateError } = await supabase
+        .from("jobs")
+        .update({ is_active: false })
+        .in("id", batch);
 
-    if (deactivateError) {
-      console.error(`Deactivate error for ${label}:`, deactivateError);
-    } else {
-      deactivated = staleIds.length;
+      if (deactivateError) {
+        console.error(`Deactivate error for ${label} batch:`, deactivateError);
+      } else {
+        deactivated += batch.length;
+      }
     }
   }
 
