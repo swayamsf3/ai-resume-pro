@@ -14,7 +14,7 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
@@ -22,7 +22,7 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -38,16 +38,17 @@ const AdminJobs = () => {
     const jobs = jobsQuery.data ?? [];
     const manual = jobs.filter((j) => j.source === "manual").length;
     const feed = jobs.filter((j) => j.source === "employer_feed").length;
-    const realApi = jobs.filter((j) => j.source === "adzuna" || j.source === "themuse").length;
+    const adzunaMuse = jobs.filter((j) => j.source === "adzuna" || j.source === "themuse").length;
+    const jsearch = jobs.filter((j) => j.source === "jsearch").length;
     const active = jobs.filter((j) => j.is_active).length;
     const inactive = jobs.length - active;
-    return { total: jobs.length, manual, feed, realApi, active, inactive };
+    return { total: jobs.length, manual, feed, adzunaMuse, jsearch, active, inactive };
   }, [jobsQuery.data]);
 
   const filteredJobs = useMemo(() => {
     const jobs = jobsQuery.data ?? [];
     if (sourceFilter === "all") return jobs;
-    if (sourceFilter === "real_api") return jobs.filter((j) => j.source === "adzuna" || j.source === "themuse");
+    if (sourceFilter === "real_api") return jobs.filter((j) => j.source === "adzuna" || j.source === "themuse" || j.source === "jsearch");
     return jobs.filter((j) => j.source === sourceFilter);
   }, [jobsQuery.data, sourceFilter]);
 
@@ -66,10 +67,11 @@ const AdminJobs = () => {
         </motion.h1>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {[
             { label: "Total Jobs", value: stats.total, icon: Database },
-            { label: "Real API", value: stats.realApi, icon: Globe },
+            { label: "Adzuna + Muse", value: stats.adzunaMuse, icon: Globe },
+            { label: "JSearch", value: stats.jsearch, icon: Search },
             { label: "Employer Feed", value: stats.feed, icon: Activity },
             { label: "Manual", value: stats.manual, icon: Layers },
             { label: "Active / Inactive", value: `${stats.active} / ${stats.inactive}`, icon: Activity },
@@ -121,6 +123,39 @@ const AdminJobs = () => {
           </CardContent>
         </Card>
 
+        {/* JSearch Ingestion Trigger */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              JSearch Ingestion
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                type="password"
+                placeholder="INGEST_SECRET"
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                className="sm:max-w-xs"
+              />
+              <Button
+                onClick={() => jsearchMutation.mutate({ secret, seedMode })}
+                disabled={!secret || jsearchMutation.isPending}
+                variant="secondary"
+                className="gap-2"
+              >
+                {jsearchMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                {seedMode ? "Run JSearch Seed" : "Run JSearch Daily"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Fetches jobs from JSearch (RapidAPI) independently. Free tier: 500 requests/month.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Jobs Table */}
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -131,9 +166,10 @@ const AdminJobs = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sources</SelectItem>
-                <SelectItem value="real_api">Real API (Adzuna + Muse)</SelectItem>
+                <SelectItem value="real_api">All APIs</SelectItem>
                 <SelectItem value="adzuna">Adzuna</SelectItem>
                 <SelectItem value="themuse">The Muse</SelectItem>
+                <SelectItem value="jsearch">JSearch</SelectItem>
                 <SelectItem value="employer_feed">Employer Feed</SelectItem>
                 <SelectItem value="manual">Manual</SelectItem>
               </SelectContent>
@@ -165,7 +201,7 @@ const AdminJobs = () => {
                       <TableCell className="hidden md:table-cell">{job.location}</TableCell>
                       <TableCell>
                         <Badge variant={
-                          job.source === "adzuna" || job.source === "themuse"
+                          job.source === "adzuna" || job.source === "themuse" || job.source === "jsearch"
                             ? "default"
                             : job.source === "manual"
                             ? "secondary"

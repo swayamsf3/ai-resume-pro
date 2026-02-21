@@ -136,6 +136,104 @@ async function fetchAdzunaJobs(seedMode: boolean): Promise<{ jobs: NormalizedJob
 }
 
 // ---------------------------------------------------------------------------
+// JSearch (RapidAPI) fetcher
+// ---------------------------------------------------------------------------
+
+const JSEARCH_SEED_QUERIES = ["developer India", "engineer India", "analyst India", "manager India", "designer India"];
+const JSEARCH_DAILY_QUERIES = ["developer India", "engineer India", "analyst India"];
+const MAX_JSEARCH_REQUESTS = 50;
+
+async function fetchJSearchJobs(seedMode: boolean): Promise<{ jobs: NormalizedJob[]; apiRequests: number }> {
+  const rapidApiKey = Deno.env.get("RAPIDAPI_KEY");
+  if (!rapidApiKey) {
+    console.log("RAPIDAPI_KEY not configured – skipping JSearch");
+    return { jobs: [], apiRequests: 0 };
+  }
+
+  const queries = seedMode ? JSEARCH_SEED_QUERIES : JSEARCH_DAILY_QUERIES;
+  const maxPages = seedMode ? 10 : 2;
+  const allJobs: NormalizedJob[] = [];
+  let apiRequests = 0;
+
+  for (const query of queries) {
+    for (let page = 1; page <= maxPages; page++) {
+      if (apiRequests >= MAX_JSEARCH_REQUESTS) {
+        console.log(`JSearch request cap (${MAX_JSEARCH_REQUESTS}) reached — stopping`);
+        break;
+      }
+
+      try {
+        const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=${page}&num_pages=1&country=IN`;
+        const res = await fetch(url, {
+          headers: {
+            "X-RapidAPI-Key": rapidApiKey,
+            "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+        apiRequests++;
+
+        if (!res.ok) {
+          console.error(`JSearch "${query}" page ${page} error: HTTP ${res.status}`);
+          continue;
+        }
+
+        const data = await res.json();
+        const results = data.data ?? [];
+
+        if (results.length === 0) {
+          console.log(`JSearch "${query}" page ${page}: empty — next query`);
+          break;
+        }
+
+        for (const job of results) {
+          if (!job.job_id) continue;
+
+          const salaryParts: string[] = [];
+          if (job.job_min_salary) salaryParts.push(`₹${Math.round(job.job_min_salary).toLocaleString()}`);
+          if (job.job_max_salary) salaryParts.push(`₹${Math.round(job.job_max_salary).toLocaleString()}`);
+          const salary = salaryParts.length === 2 ? salaryParts.join(" - ") : salaryParts[0] || null;
+
+          const desc = job.job_description ?? "";
+
+          allJobs.push({
+            title: job.job_title ?? "Untitled",
+            company: job.employer_name ?? "Unknown",
+            location: job.job_city
+              ? `${job.job_city}, ${job.job_state ?? job.job_country ?? "India"}`
+              : job.job_country ?? "India",
+            type: job.job_employment_type === "PARTTIME" ? "Part-time"
+              : job.job_employment_type === "CONTRACTOR" ? "Contract"
+              : "Full-time",
+            salary,
+            description: desc.slice(0, 2000) || null,
+            skills: extractSkillsFromText(desc),
+            apply_url: job.job_apply_link ?? `https://www.google.com/search?q=${encodeURIComponent(job.job_title + " " + job.employer_name)}`,
+            external_id: `jsearch_${job.job_id}`,
+            source: "jsearch",
+            is_active: true,
+            posted_at: job.job_posted_at_datetime_utc
+              ? new Date(job.job_posted_at_datetime_utc).toISOString()
+              : new Date().toISOString(),
+          });
+        }
+
+        console.log(`JSearch "${query}" page ${page}: fetched ${results.length} jobs`);
+
+        if (seedMode) await new Promise((r) => setTimeout(r, 300));
+      } catch (err) {
+        console.error(`JSearch "${query}" page ${page} fetch error:`, err);
+      }
+    }
+
+    if (apiRequests >= MAX_JSEARCH_REQUESTS) break;
+  }
+
+  console.log(`JSearch total: ${allJobs.length} jobs fetched using ${apiRequests} API requests`);
+  return { jobs: allJobs, apiRequests };
+}
+
+// ---------------------------------------------------------------------------
 // The Muse API fetcher — capped at 5 pages
 // ---------------------------------------------------------------------------
 
@@ -308,11 +406,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Parse request body for seedMode flag
+    // Parse request body for seedMode and jsearchOnly flags
     let seedMode = false;
+    let jsearchOnly = false;
     try {
       const body = await req.json();
       seedMode = body?.seedMode === true;
+      jsearchOnly = body?.jsearchOnly === true;
     } catch {
       // No body or invalid JSON — default to daily mode
     }
@@ -334,40 +434,67 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Ingestion started — mode: ${seedMode ? "SEED" : "DAILY"}`);
+    const modeLabel = jsearchOnly ? "JSEARCH-ONLY" : seedMode ? "SEED" : "DAILY";
+    console.log(`Ingestion started — mode: ${modeLabel}`);
 
     const results: Record<string, { upserted: number; deactivated: number }> = {};
+    let adzunaApiRequests = 0;
+    let jsearchApiRequests = 0;
 
-    // 1. Fetch from real APIs (Adzuna + The Muse) in parallel
-    const [adzunaResult, museJobs] = await Promise.all([
-      fetchAdzunaJobs(seedMode),
-      fetchMuseJobs(),
-    ]);
+    if (jsearchOnly) {
+      // JSearch-only mode
+      const jsearchResult = await fetchJSearchJobs(seedMode);
+      jsearchApiRequests = jsearchResult.apiRequests;
 
-    // 2. Upsert Adzuna jobs
-    if (adzunaResult.jobs.length > 0) {
-      results["Adzuna"] = await upsertAndDeactivate(supabase, "adzuna", adzunaResult.jobs, "Adzuna");
+      if (jsearchResult.jobs.length > 0) {
+        results["JSearch"] = await upsertAndDeactivate(supabase, "jsearch", jsearchResult.jobs, "JSearch");
+      } else {
+        results["JSearch"] = { upserted: 0, deactivated: 0 };
+      }
     } else {
-      results["Adzuna"] = { upserted: 0, deactivated: 0 };
+      // Full ingestion: Adzuna + The Muse + JSearch in parallel
+      const [adzunaResult, museJobs, jsearchResult] = await Promise.all([
+        fetchAdzunaJobs(seedMode),
+        fetchMuseJobs(),
+        fetchJSearchJobs(seedMode),
+      ]);
+
+      adzunaApiRequests = adzunaResult.apiRequests;
+      jsearchApiRequests = jsearchResult.apiRequests;
+
+      // Upsert Adzuna
+      if (adzunaResult.jobs.length > 0) {
+        results["Adzuna"] = await upsertAndDeactivate(supabase, "adzuna", adzunaResult.jobs, "Adzuna");
+      } else {
+        results["Adzuna"] = { upserted: 0, deactivated: 0 };
+      }
+
+      // Upsert The Muse
+      if (museJobs.length > 0) {
+        results["The Muse"] = await upsertAndDeactivate(supabase, "themuse", museJobs, "The Muse");
+      } else {
+        results["The Muse"] = { upserted: 0, deactivated: 0 };
+      }
+
+      // Upsert JSearch
+      if (jsearchResult.jobs.length > 0) {
+        results["JSearch"] = await upsertAndDeactivate(supabase, "jsearch", jsearchResult.jobs, "JSearch");
+      } else {
+        results["JSearch"] = { upserted: 0, deactivated: 0 };
+      }
     }
 
-    // 3. Upsert The Muse jobs
-    if (museJobs.length > 0) {
-      results["The Muse"] = await upsertAndDeactivate(supabase, "themuse", museJobs, "The Muse");
-    } else {
-      results["The Muse"] = { upserted: 0, deactivated: 0 };
-    }
-
-    // 4. Cleanup old inactive jobs
+    // Cleanup old inactive jobs
     const deletedCount = await cleanupOldInactiveJobs(supabase);
 
-    console.log(`Ingestion complete — mode: ${seedMode ? "SEED" : "DAILY"}, Adzuna API requests: ${adzunaResult.apiRequests}`);
+    console.log(`Ingestion complete — mode: ${modeLabel}, Adzuna requests: ${adzunaApiRequests}, JSearch requests: ${jsearchApiRequests}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        mode: seedMode ? "seed" : "daily",
-        adzunaApiRequests: adzunaResult.apiRequests,
+        mode: jsearchOnly ? "jsearch-only" : seedMode ? "seed" : "daily",
+        adzunaApiRequests,
+        jsearchApiRequests,
         deletedInactiveJobs: deletedCount,
         results,
       }),
