@@ -1,74 +1,73 @@
-## Clean Up Ingestion: Real Indian Jobs Only
+## Add JSearch (RapidAPI) as a Third Job Source
 
-### What Changes
+### Overview
 
-**File: `supabase/functions/ingest-jobs/index.ts**` (complete rewrite of the function)
+Integrate the JSearch API from RapidAPI into the existing ingestion pipeline to significantly boost job count. JSearch aggregates listings from LinkedIn, Indeed, Glassdoor, and other major job boards, giving you access to thousands of additional Indian jobs.
 
-### 1. Remove All Mock Feeds
+### Setup Required
 
-- Delete the entire `FEEDS` array (TechCorp, DataWorks, DesignHub, FinanceFirst, HealthTech, GreenEnergy, MediaStack, Infosys, TCS, Wipro, Razorpay, Zerodha, Flipkart, Freshworks, CRED)
-- Delete `FeedConfig`, `FeedJob` interfaces
-- Delete `fetchFeedJobs()` and `normalizeJob()` helper functions
-- Remove the mock feed processing loop from the main handler (lines 829-871)
+**Step 1: Get your RapidAPI key**
 
-### 2. Adzuna: India Only, Two Modes
+1. Go to [https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch)
+2. Subscribe to the free tier (500 requests/month)
+3. Copy your RapidAPI key from the dashboard
 
-**Seed Mode** (triggered by passing `seedMode: true` in the POST body):
+**Step 2: Save the key as a Supabase secret**
+The key will be stored securely as `RAPIDAPI_KEY` in your Supabase project secrets.
 
-- Country: India only (`in`)
-- Categories: `it-jobs`, `engineering-jobs`, `accounting-finance-jobs`, `hr-jobs`, `consultancy-jobs` (5 total)
-- Pages: 1 through 20 per category
-- Max requests: 5 categories x 20 pages = 100, but capped at 80 with an early-exit counter
-- 300ms delay between page fetches
-- Logs total API requests used
+### Changes to `supabase/functions/ingest-jobs/index.ts`
 
-**Daily Mode** (default, `seedMode: false`):
+#### New JSearch Fetcher Function
 
-- Country: India only (`in`)
-- Categories: `it-jobs`, `engineering-jobs` (2 total)
-- Pages: 1 through 3 per category
-- Max requests: 2 x 3 = 6
-- No extra delay needed (small number of requests)
+Add a `fetchJSearchJobs()` function that:
 
-### 3. The Muse: Cap at 5 Pages
+- Searches for Indian jobs using queries like "developer India", "engineer India", "analyst India", "manager India", "designer India"
+- Seed mode: 5 queries x 10 pages (20 results each) = up to 50 requests, ~1,000 jobs
+- Daily mode: 3 queries x 2 pages = 6 requests, ~120 jobs
+- Normalizes results into the existing `NormalizedJob` format
+- Uses `external_id: jsearch_{job_id}` for deduplication
+- Extracts skills from descriptions using existing `extractSkillsFromText()`
+- Respects a 300ms delay between requests in seed mode
 
-- Change loop from `page < 2` to `page < 5`
+#### JSearch API Details
 
-### 4. Cleanup Step
+- Endpoint: `https://jsearch.p.rapidapi.com/search`
+- Parameters: `query`, `page`, `num_pages`, `country=IN`
+- Headers: `X-RapidAPI-Key`, `X-RapidAPI-Host: jsearch.p.rapidapi.com`
+- Returns: title, company, location, description, salary, apply link
 
-- After upsert/deactivate, permanently delete jobs where `is_active = false` AND `created_at` is older than 60 days
+#### Main Handler Updates
 
-### 5. Remove US Fetching
+- Add JSearch to the parallel fetch alongside Adzuna and The Muse
+- Upsert JSearch jobs with source "jsearch"
+- Include JSearch stats in the response
 
-- Remove `"us"` from countries entirely
-- Remove the `ADZUNA_COUNTRIES` array, hardcode `"in"`
-
-### Expected Request Budget Per Run
-
-
-| Mode  | Adzuna Requests | Muse Requests | Total |
-| ----- | --------------- | ------------- | ----- |
-| Seed  | Up to 80        | 5             | 85    |
-| Daily | 6               | 5             | 11    |
+### Expected Job Counts After Integration
 
 
-### Expected Job Counts
+| Source        | Seed Mode       | Daily Mode            |
+| ------------- | --------------- | --------------------- |
+| Adzuna India  | 3,000-4,000     | ~300 refresh          |
+| The Muse      | ~100            | ~100                  |
+| JSearch (new) | ~800-1,000      | ~120 refresh          |
+| **Total**     | **4,000-5,100** | Maintains + refreshes |
 
 
-| Source       | Seed Mode       | Daily Mode            |
-| ------------ | --------------- | --------------------- |
-| Adzuna India | 3,000-4,000     | Refreshes top ~300    |
-| The Muse     | ~100            | ~100                  |
-| **Total**    | **3,100-4,100** | Maintains + refreshes |
+### Request Budget
 
 
-### How to Use
+| Mode  | Adzuna   | Muse | JSearch  | Total |
+| ----- | -------- | ---- | -------- | ----- |
+| Seed  | Up to 80 | 5    | Up to 50 | 135   |
+| Daily | 6        | 5    | 6        | 17    |
 
-1. **First run**: Send POST with body `{"seedMode": true}` to bulk-load jobs
-2. **Daily runs**: Normal POST (no body or `seedMode: false`) to refresh latest listings and clean up expired ones
 
-### Technical Detail: Seed Mode Activation
+The free JSearch tier allows 500 requests/month, so daily mode (6 requests/day x 30 days = 180) fits comfortably.
 
-The `seedMode` flag is read from the request JSON body. The admin panel's "Run Ingestion" button currently sends no body, so it defaults to daily mode. To trigger seed mode, you would call the function directly or we can add a checkbox to the admin UI.  
+### Technical Details
+
+- **File modified**: `supabase/functions/ingest-jobs/index.ts` -- add the JSearch fetcher and wire it into the main handler
+- **Secret needed**: `RAPIDAPI_KEY` -- will be added via Supabase secrets
+- **No database changes needed** -- jobs table schema already supports the new source  
   
-Add protection so seedMode cannot be executed more than once within 7 days.
+Just GIVE Seperate injestion button we  want a seperate injest button for jsearch api
