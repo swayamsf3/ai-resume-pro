@@ -290,7 +290,8 @@ async function upsertAndDeactivate(
   supabase: ReturnType<typeof createClient>,
   source: string,
   jobs: NormalizedJob[],
-  label: string
+  label: string,
+  deactivateStale = true
 ): Promise<{ upserted: number; deactivated: number }> {
   if (jobs.length === 0) return { upserted: 0, deactivated: 0 };
 
@@ -306,6 +307,12 @@ async function upsertAndDeactivate(
       console.error(`Upsert error for ${label} batch ${i / BATCH_SIZE + 1}:`, upsertError);
       throw upsertError;
     }
+  }
+
+  // Skip deactivation in daily mode to avoid wiping seeded jobs
+  if (!deactivateStale) {
+    console.log(`${label}: skipping stale-job deactivation (daily mode)`);
+    return { upserted: jobs.length, deactivated: 0 };
   }
 
   const currentExternalIds = jobs.map((j) => j.external_id);
@@ -495,7 +502,7 @@ Deno.serve(async (req) => {
       jsearchApiRequests = jsearchResult.apiRequests;
 
       if (jsearchResult.jobs.length > 0) {
-        results["JSearch"] = await upsertAndDeactivate(supabase, "jsearch", jsearchResult.jobs, "JSearch");
+        results["JSearch"] = await upsertAndDeactivate(supabase, "jsearch", jsearchResult.jobs, "JSearch", seedMode);
       } else {
         results["JSearch"] = { upserted: 0, deactivated: 0 };
       }
@@ -512,21 +519,21 @@ Deno.serve(async (req) => {
 
       // Upsert Adzuna
       if (adzunaResult.jobs.length > 0) {
-        results["Adzuna"] = await upsertAndDeactivate(supabase, "adzuna", adzunaResult.jobs, "Adzuna");
+        results["Adzuna"] = await upsertAndDeactivate(supabase, "adzuna", adzunaResult.jobs, "Adzuna", seedMode);
       } else {
         results["Adzuna"] = { upserted: 0, deactivated: 0 };
       }
 
       // Upsert The Muse
       if (museJobs.length > 0) {
-        results["The Muse"] = await upsertAndDeactivate(supabase, "themuse", museJobs, "The Muse");
+        results["The Muse"] = await upsertAndDeactivate(supabase, "themuse", museJobs, "The Muse", seedMode);
       } else {
         results["The Muse"] = { upserted: 0, deactivated: 0 };
       }
 
       // Upsert JSearch
       if (jsearchResult.jobs.length > 0) {
-        results["JSearch"] = await upsertAndDeactivate(supabase, "jsearch", jsearchResult.jobs, "JSearch");
+        results["JSearch"] = await upsertAndDeactivate(supabase, "jsearch", jsearchResult.jobs, "JSearch", seedMode);
       } else {
         results["JSearch"] = { upserted: 0, deactivated: 0 };
       }
