@@ -11,13 +11,21 @@ export const useAdminJobs = () => {
   const jobsQuery = useQuery({
     queryKey: ["admin-jobs"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(0, 4999);
-      if (error) throw error;
-      return data;
+      const PAGE_SIZE = 1000;
+      let allJobs: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("jobs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        allJobs = allJobs.concat(data || []);
+        if (!data || data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allJobs;
     },
   });
 
