@@ -1,44 +1,44 @@
 
 
-## Fix: Prevent Daily Mode from Mass-Deactivating Seeded Jobs
+## Fix: Admin Dashboard Capped at 1000 Jobs
 
 ### Root Cause
-The `upsertAndDeactivate` function deactivates all active jobs from a source that are NOT in the current fetch batch. This worked fine when limited to 1000 rows, but now with paginated fetching, daily mode (which fetches only ~300 jobs) correctly finds and deactivates ALL other active jobs from that source -- wiping out thousands of seeded jobs.
+Supabase PostgREST enforces a server-side `max_rows = 1000` limit. The `.range(0, 4999)` call does NOT override this -- PostgREST still caps the response at 1000 rows. The database actually has **4,701 jobs**.
 
 ### Solution
-Only run the deactivation logic when in **seed mode**. In daily mode, we should only upsert new/updated jobs without deactivating old ones. Seeded jobs should remain active until the next seed run replaces them or they expire via the 60-day cleanup.
+Replace the single query with a paginated loop that fetches all jobs in batches of 1000, identical to the pattern already used in the edge functions.
 
 ### Changes
 
-#### 1. Edge Function: `supabase/functions/ingest-jobs/index.ts`
+**File: `src/hooks/useAdminJobs.ts`**
 
-- Add a `deactivateStale` parameter to `upsertAndDeactivate`
-- Pass `deactivateStale: true` only in seed mode, `false` in daily mode
-- When `deactivateStale` is false, skip the stale-job query and deactivation entirely
+Replace the `jobsQuery` function with a paginated fetch loop:
 
-#### 2. Re-activate the 4,146 deactivated jobs
-
-- Run a SQL query to set `is_active = true` for all recently deactivated jobs (those deactivated in the last hour that were originally from the seed run)
-
-### Technical Details
-
-**Modified function signature:**
-```text
-async function upsertAndDeactivate(
-  supabase, source, jobs, label, deactivateStale = true
-)
+```typescript
+jobsQuery = useQuery({
+  queryKey: ["admin-jobs"],
+  queryFn: async () => {
+    const PAGE_SIZE = 1000;
+    let allJobs: any[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      allJobs = allJobs.concat(data || []);
+      if (!data || data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+    return allJobs;
+  },
+});
 ```
 
-**Call sites updated:**
-- Seed mode: `upsertAndDeactivate(supabase, "adzuna", jobs, "Adzuna", true)`
-- Daily mode: `upsertAndDeactivate(supabase, "adzuna", jobs, "Adzuna", false)`
+### Important Note
+The RLS policy on the `jobs` table only allows viewing **active** jobs (`is_active = true`). Since all 4,701 jobs are currently active, this will work. However, the admin dashboard's "Active / Inactive" stat will always show 0 inactive because RLS hides inactive jobs from the client. If you want the admin to see inactive jobs too, a separate RLS policy or a service-role edge function would be needed.
 
-**Recovery SQL:**
-```sql
-UPDATE jobs SET is_active = true WHERE is_active = false AND source IN ('adzuna','jsearch') AND created_at < now() - interval '1 hour';
-```
-
-**Files modified:**
-- `supabase/functions/ingest-jobs/index.ts`
-- One-time SQL migration to restore deactivated jobs
-
+### Files Modified
+- `src/hooks/useAdminJobs.ts` -- paginated fetching loop
