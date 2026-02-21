@@ -3,7 +3,8 @@ import Header from "@/components/layout/Header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Search, Sparkles, Loader2 } from "lucide-react";
+import { Search, Sparkles, Loader2, MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useJobMatches } from "@/hooks/useJobMatches";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
@@ -22,6 +23,7 @@ const Jobs = () => {
   const [showUploader, setShowUploader] = useState(false);
   const [showSkillsEditor, setShowSkillsEditor] = useState(false);
   const [minMatchPercentage, setMinMatchPercentage] = useState(0);
+  const [selectedLocation, setSelectedLocation] = useState("all");
 
   const { data: jobData, isLoading: jobsLoading } = useJobMatches();
   const { isJobSaved, toggleSaveJob } = useSavedJobs();
@@ -34,10 +36,27 @@ const Jobs = () => {
    }, [user, authLoading, navigate]);
  
   const jobs = jobData?.jobs || [];
+
+  // Extract unique cities from job locations
+  const locationCities = Array.from(
+    new Set(
+      jobs.map((job) => {
+        const parts = job.location.split(",").map((s) => s.trim());
+        return parts[0];
+      }).filter(Boolean)
+    )
+  ).sort();
+
   const filteredJobs = jobs.filter((job) => {
-    // Match percentage filter (only apply if user has skills)
+    // Match percentage filter
     if (hasResume && job.match_percentage < minMatchPercentage) {
       return false;
+    }
+
+    // Location filter
+    if (selectedLocation !== "all") {
+      const city = job.location.split(",")[0]?.trim();
+      if (city !== selectedLocation) return false;
     }
     
     // Text search filter
@@ -136,15 +155,29 @@ const Jobs = () => {
               transition={{ delay: 0.1 }}
               className="max-w-2xl mx-auto mb-8"
             >
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search by job title, company, or skill..."
-                  className="pl-12 h-14 text-base rounded-xl border-border"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+             <div className="flex gap-3">
+                 <div className="relative flex-1">
+                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                   <Input
+                     placeholder="Search by job title, company, or skill..."
+                     className="pl-12 h-14 text-base rounded-xl border-border"
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                   />
+                 </div>
+                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                   <SelectTrigger className="w-[180px] h-14 rounded-xl border-border">
+                     <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
+                     <SelectValue placeholder="All Locations" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="all">All Locations</SelectItem>
+                     {locationCities.map((city) => (
+                       <SelectItem key={city} value={city}>{city}</SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
               
               {/* Match Percentage Filter */}
               {hasResume && (
