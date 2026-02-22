@@ -6,20 +6,21 @@
      "authorization, x-client-info, apikey, content-type",
  };
  
- interface Job {
-   id: string;
-   title: string;
-   company: string;
-   location: string;
-   type: string;
-   salary: string;
-   description: string;
-   skills: string[];
-   apply_url: string;
-   posted_at: string;
-   is_active: boolean;
-   created_at: string;
- }
+interface Job {
+  id: string;
+  external_id: string | null;
+  title: string;
+  company: string;
+  location: string;
+  type: string;
+  salary: string;
+  description: string;
+  skills: string[];
+  apply_url: string;
+  posted_at: string;
+  is_active: boolean;
+  created_at: string;
+}
  
  interface MatchedJob extends Job {
    match_percentage: number;
@@ -195,8 +196,15 @@ function skillsMatch(userSkill: string, jobSkill: string): boolean {
       if (!data || data.length < PAGE_SIZE) break;
       from += PAGE_SIZE;
     }
-    const jobs = allJobs;
- 
+    // Deduplicate jobs by external_id or id
+    const seen = new Set<string>();
+    const jobs = allJobs.filter(job => {
+      const key = job.external_id || job.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
      // Calculate match for each job
      const matchedJobs: MatchedJob[] = (jobs || []).map((job: Job) => {
        const { matchPercentage, matchingSkills, missingSkills } = calculateMatch(
