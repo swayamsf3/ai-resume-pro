@@ -16,6 +16,8 @@ import { SkillsEditor } from "@/components/jobs/SkillsEditor";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
  
+const JOBS_PER_PAGE = 20;
+
 const Jobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const Jobs = () => {
   const [showSavedOnly, setShowSavedOnly] = useState(
     searchParams.get("filter") === "saved"
   );
+  const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE);
 
   const { data: jobData, isLoading: jobsLoading } = useJobMatches();
   const { savedJobIds, isJobSaved, toggleSaveJob } = useSavedJobs();
@@ -50,6 +53,11 @@ const Jobs = () => {
       }).filter(Boolean)
     )
   ).sort();
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setVisibleCount(JOBS_PER_PAGE);
+  }, [searchQuery, selectedLocation, minMatchPercentage, showSavedOnly]);
 
   const filteredJobs = jobs.filter((job) => {
     // Saved filter
@@ -244,18 +252,29 @@ const Jobs = () => {
                <Loader2 className="w-8 h-8 animate-spin text-primary" />
              </div>
            ) : (
-             <div className="space-y-4">
-               {filteredJobs.map((job, index) => (
-                 <JobCard
-                   key={job.id}
-                   job={job}
-                   index={index}
-                   isSaved={isJobSaved(job.id)}
-                   onToggleSave={() => toggleSaveJob.mutate(job.id)}
-                   hasUserSkills={hasResume}
-                 />
-               ))}
-             </div>
+              <div className="space-y-4">
+                {filteredJobs.slice(0, visibleCount).map((job, index) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    index={index}
+                    isSaved={isJobSaved(job.id)}
+                    onToggleSave={() => toggleSaveJob.mutate(job.id)}
+                    hasUserSkills={hasResume}
+                  />
+                ))}
+                {visibleCount < filteredJobs.length && (
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setVisibleCount((c) => c + JOBS_PER_PAGE)}
+                    >
+                      Load More ({filteredJobs.length - visibleCount} remaining)
+                    </Button>
+                  </div>
+                )}
+              </div>
            )}
  
            {!jobsLoading && filteredJobs.length === 0 && (

@@ -36,7 +36,7 @@
      <motion.div
        initial={{ opacity: 0, y: 20 }}
        animate={{ opacity: 1, y: 0 }}
-       transition={{ delay: 0.1 + index * 0.05 }}
+       transition={{ delay: Math.min(0.1 + index * 0.05, 0.5) }}
      >
        <Card className="border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group">
          <CardContent className="p-6">
