@@ -1,92 +1,35 @@
-## Speed Up Job Recommendations Page
 
-### Root Cause
 
-Three compounding performance issues:
+## Fix: Password Reset 404 on Vercel
 
-1. **All 4,701 jobs render at once** -- no pagination or virtualization
-2. **Staggered animation delay per card** -- `delay: 0.1 + index * 0.05` means the 4,701st card waits 235 seconds to animate
-3. **Duplicate job IDs** in the data causing React key warnings (visible in console logs)
+### Problem
+
+Vercel returns `404: NOT_FOUND` when the user clicks the password reset link in their email. This happens because:
+
+1. Supabase redirects to `https://ai-resume-pro-vert.vercel.app/reset-password`
+2. Vercel looks for an actual `/reset-password` file/folder on the server
+3. Since this is a React SPA with client-side routing (React Router), no such file exists
+4. Vercel returns 404 instead of serving `index.html` and letting React Router handle the route
 
 ### Solution
 
-Add client-side pagination with a "Load More" button and fix the animation performance.
+Create a `vercel.json` file in the project root that tells Vercel to rewrite all routes to `index.html`. This is a standard requirement for any SPA deployed on Vercel.
 
 ### Changes
 
-#### 1. `src/pages/Jobs.tsx`
+#### 1. Create `vercel.json` (new file)
 
-- Add pagination state: `const [visibleCount, setVisibleCount] = useState(20)`
-- Slice `filteredJobs` to only render the first `visibleCount` items
-- Add a "Load More" button at the bottom that increases `visibleCount` by 20
-- Reset `visibleCount` to 20 when filters/search change
-
-#### 2. `src/components/jobs/JobCard.tsx`
-
-- Cap the animation delay so it never exceeds a reasonable value (e.g., max 0.5s)
-- Change line 39 from `transition={{ delay: 0.1 + index * 0.05 }}` to `transition={{ delay: Math.min(0.1 + index * 0.05, 0.5) }}`
-
-#### 3. `supabase/functions/match-jobs/index.ts`
-
-- Add deduplication logic to filter out jobs with duplicate IDs (fixes the React key warning)
-
-### Technical Details
-
-**Pagination in Jobs.tsx:**
-
-```typescript
-const JOBS_PER_PAGE = 20;
-const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE);
-
-// Reset when filters change
-useEffect(() => {
-  setVisibleCount(JOBS_PER_PAGE);
-}, [searchQuery, selectedLocation, minMatchPercentage, showSavedOnly]);
-
-const visibleJobs = filteredJobs.slice(0, visibleCount);
-const hasMore = visibleCount < filteredJobs.length;
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
 ```
 
-**Animation cap in JobCard.tsx:**
+This single rule catches all routes and serves `index.html`, allowing React Router to handle routing on the client side. This fixes `/reset-password` and also prevents 404s on any other route if a user refreshes the page (e.g., `/dashboard`, `/builder`, `/jobs`).
 
-```typescript
-transition={{ delay: Math.min(0.1 + index * 0.05, 0.5) }}
-```
+### After Implementation
 
-**Deduplication in match-jobs edge function:**
+After the file is created, you will need to redeploy on Vercel for the change to take effect. If you have automatic deployments from Git, just push the change. Otherwise, trigger a manual redeploy.
 
-```typescript
-// Deduplicate jobs by ID
-const seen = new Set<string>();
-const uniqueJobs = allJobs.filter(job => {
-  if (seen.has(job.id)) return false;
-  seen.add(job.id);
-  return true;
-});
-```
-
-### Files Modified
-
-- `src/pages/Jobs.tsx` -- add pagination with "Load More"
-- `src/components/jobs/JobCard.tsx` -- cap animation delay
-- `supabase/functions/match-jobs/index.ts` -- deduplicate jobs  
-  
-  
-  
-Small Improvement (Optional but Smart)
-  Instead of deduplicating by `job.id`, make sure it's:
-  ```
-  job.external_id || job.id
-  ```
-  Because multiple sources may generate overlapping internal IDs.
-  Better:
-  ```
-  const seen = new Set<string>();
-  const uniqueJobs = allJobs.filter(job => {
-    const key = job.external_id || job.id;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  ```
-  This avoids cross-source duplication.
