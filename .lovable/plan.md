@@ -1,35 +1,22 @@
 
 
-## Fix: Password Reset 404 on Vercel
+## Fix: Professional Summary Alignment in Minimal Template
 
 ### Problem
+The professional summary text in the Minimal Template uses `text-center` alignment, causing text to start from the center rather than being evenly distributed across the page width.
 
-Vercel returns `404: NOT_FOUND` when the user clicks the password reset link in their email. This happens because:
+### Change
+**File: `src/components/builder/templates/MinimalTemplate.tsx` (line 35)**
 
-1. Supabase redirects to `https://ai-resume-pro-vert.vercel.app/reset-password`
-2. Vercel looks for an actual `/reset-password` file/folder on the server
-3. Since this is a React SPA with client-side routing (React Router), no such file exists
-4. Vercel returns 404 instead of serving `index.html` and letting React Router handle the route
+Change the summary paragraph's class from `text-center` to `text-justify` so the text is evenly distributed between margins.
 
-### Solution
+```
+// Before
+<p className="text-[11px] leading-snug text-center">
 
-Create a `vercel.json` file in the project root that tells Vercel to rewrite all routes to `index.html`. This is a standard requirement for any SPA deployed on Vercel.
-
-### Changes
-
-#### 1. Create `vercel.json` (new file)
-
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+// After
+<p className="text-[11px] leading-snug text-justify">
 ```
 
-This single rule catches all routes and serves `index.html`, allowing React Router to handle routing on the client side. This fixes `/reset-password` and also prevents 404s on any other route if a user refreshes the page (e.g., `/dashboard`, `/builder`, `/jobs`).
-
-### After Implementation
-
-After the file is created, you will need to redeploy on Vercel for the change to take effect. If you have automatic deployments from Git, just push the change. Otherwise, trigger a manual redeploy.
+This is a one-line change that switches the CSS `text-align` property from `center` to `justify`.
 
