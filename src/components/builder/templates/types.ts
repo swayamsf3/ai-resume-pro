@@ -1,4 +1,4 @@
-export type TemplateId = "classic" | "modern" | "minimal" | "professional" | "normal";
+export type TemplateId = "classic" | "modern" | "professional" | "normal";
 
 export interface Template {
   id: TemplateId;
@@ -16,11 +16,6 @@ export const templates: Template[] = [
     id: "modern",
     name: "Modern",
     description: "Clean design with bold headings, fully ATS compatible",
-  },
-  {
-    id: "minimal",
-    name: "Minimal",
-    description: "Simple centered layout, perfect for ATS parsing",
   },
   {
     id: "professional",

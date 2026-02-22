@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ClassicTemplate from "./templates/ClassicTemplate";
 import ModernTemplate from "./templates/ModernTemplate";
-import MinimalTemplate from "./templates/MinimalTemplate";
+
 import ProfessionalTemplate from "./templates/ProfessionalTemplate";
 import NormalTemplate from "./templates/NormalTemplate";
 import jsPDF from "jspdf";
@@ -240,8 +240,6 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
     switch (templateId) {
       case "modern":
         return <ModernTemplate {...templateProps} />;
-      case "minimal":
-        return <MinimalTemplate {...templateProps} />;
       case "professional":
         return <ProfessionalTemplate {...templateProps} />;
       case "normal":
