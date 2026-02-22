@@ -76,7 +76,7 @@ const Auth = () => {
           data: {
             full_name: signupName,
           },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
