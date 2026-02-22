@@ -1,87 +1,92 @@
-## Save Generated Resumes with Account Name
+## Speed Up Job Recommendations Page
 
-### Problem
+### Root Cause
 
-Currently, generated resumes are saved to Supabase storage using the name entered in the resume builder form (`personalInfo.fullName`). The user wants the file to be saved using their **account name** from their profile instead.
+Three compounding performance issues:
+
+1. **All 4,701 jobs render at once** -- no pagination or virtualization
+2. **Staggered animation delay per card** -- `delay: 0.1 + index * 0.05` means the 4,701st card waits 235 seconds to animate
+3. **Duplicate job IDs** in the data causing React key warnings (visible in console logs)
 
 ### Solution
 
-Fetch the user's profile name from the `profiles` table and use it as the file name when uploading to Supabase storage.
+Add client-side pagination with a "Load More" button and fix the animation performance.
 
 ### Changes
 
-**File: `src/components/builder/ResumePreview.tsx**`
+#### 1. `src/pages/Jobs.tsx`
 
-1. Query the user's profile (full_name) from the `profiles` table using the authenticated user's ID
-2. When saving to storage, use the profile's `full_name` instead of `personalInfo.fullName` for the storage file path
-3. Keep the local download name as-is (using `personalInfo.fullName`) since that reflects the resume content
+- Add pagination state: `const [visibleCount, setVisibleCount] = useState(20)`
+- Slice `filteredJobs` to only render the first `visibleCount` items
+- Add a "Load More" button at the bottom that increases `visibleCount` by 20
+- Reset `visibleCount` to 20 when filters/search change
 
-**Before (line ~183):**
+#### 2. `src/components/jobs/JobCard.tsx`
+
+- Cap the animation delay so it never exceeds a reasonable value (e.g., max 0.5s)
+- Change line 39 from `transition={{ delay: 0.1 + index * 0.05 }}` to `transition={{ delay: Math.min(0.1 + index * 0.05, 0.5) }}`
+
+#### 3. `supabase/functions/match-jobs/index.ts`
+
+- Add deduplication logic to filter out jobs with duplicate IDs (fixes the React key warning)
+
+### Technical Details
+
+**Pagination in Jobs.tsx:**
 
 ```typescript
-const storagePath = `${user.id}/${Date.now()}_${fileName}`;
+const JOBS_PER_PAGE = 20;
+const [visibleCount, setVisibleCount] = useState(JOBS_PER_PAGE);
+
+// Reset when filters change
+useEffect(() => {
+  setVisibleCount(JOBS_PER_PAGE);
+}, [searchQuery, selectedLocation, minMatchPercentage, showSavedOnly]);
+
+const visibleJobs = filteredJobs.slice(0, visibleCount);
+const hasMore = visibleCount < filteredJobs.length;
 ```
 
-**After:**
+**Animation cap in JobCard.tsx:**
 
 ```typescript
-// Fetch account name from profiles table
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("full_name")
-  .eq("user_id", user.id)
-  .maybeSingle();
+transition={{ delay: Math.min(0.1 + index * 0.05, 0.5) }}
+```
 
-const accountName = profile?.full_name
-  ? profile.full_name.replace(/\s+/g, "_")
-  : "Resume";
+**Deduplication in match-jobs edge function:**
 
-const storageName = `${accountName}_Resume.pdf`;
-const storagePath = `${user.id}/${Date.now()}_${storageName}`;
+```typescript
+// Deduplicate jobs by ID
+const seen = new Set<string>();
+const uniqueJobs = allJobs.filter(job => {
+  if (seen.has(job.id)) return false;
+  seen.add(job.id);
+  return true;
+});
 ```
 
 ### Files Modified
 
-- `src/components/builder/ResumePreview.tsx` -- use account name for storage file naming  
+- `src/pages/Jobs.tsx` -- add pagination with "Load More"
+- `src/components/jobs/JobCard.tsx` -- cap animation delay
+- `supabase/functions/match-jobs/index.ts` -- deduplicate jobs  
   
   
-Small Improvement You Should Add
-  Instead of:
+  
+Small Improvement (Optional but Smart)
+  Instead of deduplicating by `job.id`, make sure it's:
   ```
-  const storageName = `${accountName}_Resume.pdf`;
+  job.external_id || job.id
   ```
-  Use:
+  Because multiple sources may generate overlapping internal IDs.
+  Better:
   ```
-  const storageName = `${accountName}_Resume_${Date.now()}.pdf`;
+  const seen = new Set<string>();
+  const uniqueJobs = allJobs.filter(job => {
+    const key = job.external_id || job.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   ```
-  Why?
-  Without timestamp in filename:
-  - Every upload overwrites previous resume
-  - User cannot keep multiple versions
-  Right now you already add timestamp in path, but keeping it in filename is cleaner and more readable in dashboard.
-  So final recommended version:
-  ```
-  const storageName = `${accountName}_Resume_${Date.now()}.pdf`;
-  const storagePath = `${user.id}/${storageName}`;
-  ```
-  Cleaner structure.
-  ---
-  # 🧠 Also Important
-  Make sure:
-  ```
-  .eq("id", user.id)
-  ```
-  NOT:
-  ```
-  .eq("user_id", user.id)
-  ```
-  It depends on your `profiles` table schema.
-  If your `profiles` table uses:
-  ```
-  id = auth.uid()
-  ```
-  Then correct query is:
-  ```
-  .eq("id", user.id)
-  ```
-  Check that carefully.
+  This avoids cross-source duplication.
