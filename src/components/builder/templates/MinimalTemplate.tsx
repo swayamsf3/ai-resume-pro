@@ -33,7 +33,7 @@ const MinimalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Summary */}
       {personalInfo.summary && (
         <section className="resume-section">
-          <p className="text-[11px] leading-snug text-center">
+          <p className="text-[11px] leading-snug text-justify">
             {personalInfo.summary}
           </p>
         </section>
