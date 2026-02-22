@@ -1,54 +1,87 @@
-
-
-## Make "Jobs Saved" Clickable + Add Saved Jobs View
+## Save Generated Resumes with Account Name
 
 ### Problem
-The "Jobs Saved" stat on the Dashboard is a static card with no click behavior. Users expect to click it and see their saved jobs, but nothing happens.
+
+Currently, generated resumes are saved to Supabase storage using the name entered in the resume builder form (`personalInfo.fullName`). The user wants the file to be saved using their **account name** from their profile instead.
 
 ### Solution
-1. Make the "Jobs Saved" stat card on the Dashboard clickable, linking to `/jobs?filter=saved`
-2. Add a "Saved Jobs" tab/filter on the Jobs page that shows only saved jobs
-3. Read the `filter=saved` query param on the Jobs page to auto-activate the saved filter
+
+Fetch the user's profile name from the `profiles` table and use it as the file name when uploading to Supabase storage.
 
 ### Changes
 
-#### 1. `src/pages/Dashboard.tsx`
-- Wrap the "Jobs Saved" stat card in a `<Link to="/jobs?filter=saved">` so clicking it navigates to the saved jobs view
-- Add a cursor pointer style to indicate it's clickable
+**File: `src/components/builder/ResumePreview.tsx**`
 
-#### 2. `src/pages/Jobs.tsx`
-- Read `?filter=saved` from the URL search params
-- Add a "Saved Jobs" toggle button alongside the existing match percentage filters
-- When active, filter the job list to only show jobs whose IDs are in the user's `savedJobIds`
-- Pull `savedJobIds` from the existing `useSavedJobs` hook (already imported)
+1. Query the user's profile (full_name) from the `profiles` table using the authenticated user's ID
+2. When saving to storage, use the profile's `full_name` instead of `personalInfo.fullName` for the storage file path
+3. Keep the local download name as-is (using `personalInfo.fullName`) since that reflects the resume content
 
-#### 3. `src/hooks/useSavedJobs.ts`
-- No changes needed -- it already exposes `savedJobIds` and `isJobSaved`
+**Before (line ~183):**
 
-### Technical Details
-
-**Dashboard link:**
 ```typescript
-// Wrap the "Jobs Saved" stat card
-<Link to="/jobs?filter=saved">
-  <Card className="border-border hover:shadow-lg transition-shadow cursor-pointer">
-    ...
-  </Card>
-</Link>
+const storagePath = `${user.id}/${Date.now()}_${fileName}`;
 ```
 
-**Jobs page filter logic:**
-```typescript
-const [searchParams] = useSearchParams();
-const [showSavedOnly, setShowSavedOnly] = useState(
-  searchParams.get("filter") === "saved"
-);
+**After:**
 
-// Add to filteredJobs logic:
-if (showSavedOnly && !isJobSaved(job.id)) return false;
+```typescript
+// Fetch account name from profiles table
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("full_name")
+  .eq("user_id", user.id)
+  .maybeSingle();
+
+const accountName = profile?.full_name
+  ? profile.full_name.replace(/\s+/g, "_")
+  : "Resume";
+
+const storageName = `${accountName}_Resume.pdf`;
+const storagePath = `${user.id}/${Date.now()}_${storageName}`;
 ```
 
-**Files modified:**
-- `src/pages/Dashboard.tsx` -- make stat card clickable
-- `src/pages/Jobs.tsx` -- add saved jobs filter with URL param support
+### Files Modified
 
+- `src/components/builder/ResumePreview.tsx` -- use account name for storage file naming  
+  
+  
+Small Improvement You Should Add
+  Instead of:
+  ```
+  const storageName = `${accountName}_Resume.pdf`;
+  ```
+  Use:
+  ```
+  const storageName = `${accountName}_Resume_${Date.now()}.pdf`;
+  ```
+  Why?
+  Without timestamp in filename:
+  - Every upload overwrites previous resume
+  - User cannot keep multiple versions
+  Right now you already add timestamp in path, but keeping it in filename is cleaner and more readable in dashboard.
+  So final recommended version:
+  ```
+  const storageName = `${accountName}_Resume_${Date.now()}.pdf`;
+  const storagePath = `${user.id}/${storageName}`;
+  ```
+  Cleaner structure.
+  ---
+  # 🧠 Also Important
+  Make sure:
+  ```
+  .eq("id", user.id)
+  ```
+  NOT:
+  ```
+  .eq("user_id", user.id)
+  ```
+  It depends on your `profiles` table schema.
+  If your `profiles` table uses:
+  ```
+  id = auth.uid()
+  ```
+  Then correct query is:
+  ```
+  .eq("id", user.id)
+  ```
+  Check that carefully.
