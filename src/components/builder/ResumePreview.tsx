@@ -180,7 +180,19 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       if (user) {
         try {
           const blob = pdf.output("blob");
-          const storagePath = `${user.id}/${Date.now()}_${fileName}`;
+          // Fetch account name from profiles table
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          const accountName = profile?.full_name
+            ? profile.full_name.replace(/\s+/g, "_")
+            : "Resume";
+
+          const storageName = `${accountName}_Resume_${Date.now()}.pdf`;
+          const storagePath = `${user.id}/${storageName}`;
           const { error: uploadError } = await supabase.storage
             .from("generated-resumes")
             .upload(storagePath, blob, { contentType: "application/pdf" });
