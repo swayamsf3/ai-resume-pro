@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useJobMatches } from "@/hooks/useJobMatches";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useUserResume } from "@/hooks/useUserResume";
+import { useAdminJobs } from "@/hooks/useAdminJobs";
 import { JobCard } from "@/components/jobs/JobCard";
 import { ResumeStatus } from "@/components/jobs/ResumeStatus";
 import { ResumeUploader } from "@/components/jobs/ResumeUploader";
@@ -35,6 +36,8 @@ const Jobs = () => {
   const { data: jobData, isLoading: jobsLoading } = useJobMatches();
   const { savedJobIds, isJobSaved, toggleSaveJob } = useSavedJobs();
   const { hasResume, syncFromBuilder } = useUserResume();
+  const { deleteMutation } = useAdminJobs();
+  const isAdmin = user?.email === "swayamyawalkar54@gmail.com";
  
    useEffect(() => {
      if (!authLoading && !user) {
@@ -276,6 +279,8 @@ const Jobs = () => {
                     isSaved={isJobSaved(job.id)}
                     onToggleSave={() => toggleSaveJob.mutate(job.id)}
                     hasUserSkills={hasResume}
+                    onDelete={isAdmin ? () => deleteMutation.mutate(job.id) : undefined}
+                    isDeleting={isAdmin && deleteMutation.isPending && deleteMutation.variables === job.id}
                   />
                 ))}
                 {visibleCount < filteredJobs.length && (
