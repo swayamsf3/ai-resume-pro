@@ -1,82 +1,71 @@
 
-## Fix: PDF Content Cut Off - Proper Multi-Page Pagination
+
+## Fix: PDF Content Cut Off - Section-Based PDF Generation
 
 ### Problem
-The PDF generation captures the full content as a single canvas via html2canvas, but the clone's `scrollHeight` isn't being reliably measured because the temp container uses `position: absolute` which can collapse dimensions. Content beyond page 1 gets cut off.
+The current approach renders the entire resume as one big canvas with `html2canvas`, then tries to slice it into pages. This fails because the hidden measurement div's `scrollHeight` is unreliable (it uses `position: absolute` which can collapse), resulting in an incomplete canvas. Page 2 shows overlapping/duplicate content from page 1.
 
-### Root Cause
-Two issues in the `handleDownload` function:
-1. The temp container uses `position: absolute` which can cause unreliable height calculation
-2. The clone doesn't get explicit width/height forced before html2canvas runs, so the canvas may not capture everything
-
-### Fix (single file: `src/components/builder/ResumePreview.tsx`)
-
-**Changes to the `handleDownload` function (lines 83-114):**
-
-1. **Use `position: fixed`** for the temp container instead of `absolute` - more reliable off-screen rendering
-2. **Copy the same padding/box-sizing** from the measurement div onto the clone so layout matches exactly
-3. **Wait 300ms** instead of 100ms for fonts/layout to settle
-4. **Read `scrollHeight` after append** and set explicit `height` on the clone so html2canvas captures the full content
-5. **Pass explicit `width`, `height`, `windowWidth`, `windowHeight`** to html2canvas so it knows the exact dimensions to render
-
-The page-slicing logic (lines 131-170) already works correctly - it creates per-page canvas slices from the full canvas. The only problem is the full canvas not capturing all content.
+### Solution: Full-Image Pagination (Proven Approach)
+Instead of trying to fix the container height measurement, use a simpler and more reliable pagination method. Render the full resume content into a single image, then use `addImage` with negative Y offsets to place the correct portion on each page. This avoids canvas slicing entirely.
 
 ### Technical Details
 
-Replace lines 83-111 with:
+**File: `src/components/builder/ResumePreview.tsx`**
 
+Replace the `handleDownload` function's rendering and pagination logic:
+
+1. **Use a visible-but-offscreen container** with `position: fixed; left: -9999px; visibility: hidden` (not `absolute`) and explicit `display: block` to ensure the browser computes layout correctly.
+
+2. **Replace canvas slicing with full-image pagination:**
+   - Render the full resume clone to a single canvas
+   - Calculate the image's total height in mm: `imgHeightMm = (canvas.height * 210) / canvas.width`
+   - Convert the full canvas to a single image data URL
+   - For each page, call `pdf.addImage()` with a negative Y offset to shift the image up, showing the correct portion:
+     ```
+     Page 0: y = 0
+     Page 1: y = -297
+     Page 2: y = -594
+     ```
+   - jsPDF automatically clips content outside the page bounds
+
+3. **Critical container fix** - also fix the hidden measurement div (line 295-307) to use `visibility: hidden` instead of relying on `absolute left-[-9999px]`, ensuring `scrollHeight` is computed correctly by the browser.
+
+### Code Changes
+
+**Pagination logic replacement (lines 130-185):**
 ```typescript
-// Create a temporary container for full-height rendering
-const tempContainer = document.createElement('div');
-tempContainer.style.position = 'fixed';
-tempContainer.style.left = '-9999px';
-tempContainer.style.top = '0';
-tempContainer.style.width = `${PAGE_WIDTH_PX}px`;
-tempContainer.style.background = 'white';
-tempContainer.style.zIndex = '-1';
+// Convert full canvas to image
+const imgData = canvas.toDataURL('image/jpeg', 0.92);
+const pdfWidth = 210;
+const pdfHeight = 297;
 
-// Clone the resume content
-const clone = element.cloneNode(true) as HTMLElement;
-clone.style.position = 'relative';
-clone.style.left = '0';
-clone.style.maxHeight = 'none';
-clone.style.overflow = 'visible';
-clone.style.height = 'auto';
-clone.style.width = `${PAGE_WIDTH_PX}px`;
-clone.style.padding = `${CONTENT_PADDING}px`;
-clone.style.boxSizing = 'border-box';
-clone.style.color = '#111';
-clone.style.background = '#ffffff';
+// Calculate total image height in mm (proportional to width)
+const imgHeightMm = (canvas.height * pdfWidth) / canvas.width;
+const totalPages = Math.ceil(imgHeightMm / pdfHeight);
 
-tempContainer.appendChild(clone);
-document.body.appendChild(tempContainer);
-
-// Wait for fonts and layout to fully render
-await new Promise(resolve => setTimeout(resolve, 300));
-
-// Force explicit height so html2canvas captures everything
-const fullHeight = clone.scrollHeight;
-clone.style.height = `${fullHeight}px`;
-
-// Render to canvas with explicit dimensions
-const canvas = await html2canvas(clone, {
-  scale: 2,
-  useCORS: true,
-  logging: false,
-  backgroundColor: "#ffffff",
-  width: PAGE_WIDTH_PX,
-  height: fullHeight,
-  windowWidth: PAGE_WIDTH_PX,
-  windowHeight: fullHeight,
+const pdf = new jsPDF({
+  orientation: "p",
+  unit: "mm",
+  format: "a4",
+  compress: true
 });
+
+for (let page = 0; page < totalPages; page++) {
+  if (page > 0) pdf.addPage();
+  // Place the full image with negative Y offset to show correct page slice
+  pdf.addImage(imgData, 'JPEG', 0, -(page * pdfHeight), pdfWidth, imgHeightMm);
+}
 ```
 
-### What stays the same
-- The page-slicing logic (lines 116-170) is already correct and doesn't need changes
-- The Supabase upload logic stays the same
-- The preview rendering stays the same
+**Hidden measurement div fix (line 296-304):**
+Change from `className="absolute left-[-9999px]"` to use inline styles with `position: fixed; left: -9999px; visibility: hidden` to ensure the browser computes layout/height correctly.
 
-### Expected Result
-- Full canvas captures all resume content regardless of length
-- Existing slicing logic correctly splits it into A4 pages
-- No content cut off on page 2+
+### Why This Works
+- `addImage` with a negative Y offset is a well-known jsPDF pattern for multi-page image PDFs
+- No canvas slicing needed - jsPDF handles clipping automatically at page boundaries
+- The full image is generated once and reused for all pages
+- Simpler code, fewer failure points
+
+### Files Changed
+- `src/components/builder/ResumePreview.tsx` (only file)
+
