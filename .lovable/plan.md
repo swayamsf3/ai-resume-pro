@@ -1,90 +1,63 @@
 
 
-## Fix: Date Alignment and Certification Date Display Across All Templates
+## Redesign Modern Template to Match Jake's Resume Format
 
-### Problem
-1. Dates in experience (and education in some templates) are not consistently right-aligned to the far right corner as shown in your screenshot
-2. Certification dates are not being displayed at all in any template
+### Overview
 
-### Changes
+Completely restyle the Modern Template to match the classic "Jake's Resume" LaTeX template - a clean, professional, ATS-friendly format widely used in tech.
 
-#### 1. Experience Section - Right-align dates (all 4 templates)
+### Key Design Changes
 
-The screenshot shows: position name on the left, date range flush to the right edge. Most templates already use `flex justify-between`, but some need minor fixes to ensure the date stays at the rightmost corner.
+**Header:**
+- Name large and centered (not left-aligned)
+- Contact info centered below name on one line, separated by pipes (phone | email | linkedin | portfolio)
 
-**ClassicTemplate.tsx** - Already correct layout (flex justify-between), no change needed for experience.
+**Section Headers:**
+- Small caps / uppercase with a thin horizontal rule underneath
+- Consistent across all sections
 
-**ModernTemplate.tsx** - Already correct layout, no change needed for experience.
+**Section Order:**
+- Education, Experience, Projects, Technical Skills, Certifications (Education moves up before Experience)
 
-**ProfessionalTemplate.tsx** - Already correct layout, no change needed for experience.
+**Education Section:**
+- Row 1: Institution bold (left) + Location right-aligned
+- Row 2: Degree italic (left) + Date range italic right-aligned
+- GPA shown inline with degree if present
 
-**NormalTemplate.tsx** - Already correct layout, no change needed for experience.
+**Experience Section:**
+- Row 1: Position bold (left) + Date range right-aligned
+- Row 2: Company italic (left) + Location italic right-aligned
+- Bullet points below
 
-#### 2. Education Section - Right-align dates (all 4 templates)
+**Projects Section:**
+- Row 1: Project name bold + pipe + technologies italic (left) + Date range right-aligned (if available)
+- Bullet points below
 
-Currently, education dates are inline with text (e.g., `B Tech in CSe | Institution | Oct 2017 - Aug 2024`). This needs to change to a two-column layout with dates on the far right.
+**Technical Skills:**
+- Single comma-separated list (matching existing data structure)
 
-**ClassicTemplate.tsx (lines 88-98):**
-Change from inline `<p>` to `flex justify-between` layout:
-- Left side: degree, field, institution, GPA
-- Right side: date range pushed to far right
-
-**ModernTemplate.tsx (lines 120-130):**
-Same change - split into flex layout with dates on the right.
-
-**ProfessionalTemplate.tsx (lines 126-135):**
-Same change - split into flex layout with dates on the right.
-
-**NormalTemplate.tsx (lines 46-58):**
-Already has a two-line layout. Change to add date on the right side using flex justify-between.
-
-#### 3. Certifications Section - Show dates (all 4 templates)
-
-Currently, certification dates (`cert.date`) are completely ignored in the rendering. Each template needs to display the date.
-
-**ClassicTemplate.tsx (line 120):**
-Change from inline text to a flex layout showing each certification with its date on the right.
-
-**ModernTemplate.tsx (line 152):**
-Same change - show date for each certification.
-
-**ProfessionalTemplate.tsx (line 159):**
-Same change - show date for each certification.
-
-**NormalTemplate.tsx (lines 152-162):**
-Already has a list layout. Add `formatDate(cert.date)` to each list item, right-aligned.
+**Certifications:**
+- Keep existing layout (name + issuer left, date right) - fits Jake's style naturally
 
 ### Technical Details
 
-**Education layout change (example for ClassicTemplate):**
-```
-// Before (inline)
-<p className="resume-item text-[10px]">
-  <span className="font-semibold">B Tech in CSe</span> | Institution | Oct 2017 - Aug 2024 | GPA: 7/10
-</p>
+**File: `src/components/builder/templates/ModernTemplate.tsx`**
 
-// After (flex with right-aligned date)
-<div className="resume-item text-[10px] flex justify-between">
-  <span>
-    <span className="font-semibold">B Tech in CSe</span> | Institution | GPA: 7/10
-  </span>
-  <span className="text-gray-600 whitespace-nowrap">Oct 2017 - Aug 2024</span>
-</div>
-```
+Full rewrite of the JSX layout:
 
-**Certifications layout change (example for ClassicTemplate):**
-```
-// Before (no date shown)
-{certifications.map((cert) => `${cert.name} (${cert.issuer})`).join(" . ")}
+1. **Header** - Change from `flex justify-between` to `text-center` for name and contact info
+2. **Section headers** - Add a thin border-bottom line under each section title using small-caps styling
+3. **Education** - Change from single-line flex to a two-line block per entry:
+   - Line 1: `<div className="flex justify-between"><span className="font-bold">{institution}</span><span>{location}</span></div>`
+   - Line 2: `<div className="flex justify-between"><span className="italic">{degree} in {field}</span><span className="italic">{dates}</span></div>`
+4. **Experience** - Change to two-line header per entry:
+   - Line 1: `<div className="flex justify-between"><span className="font-bold">{position}</span><span>{dates}</span></div>`
+   - Line 2: `<div className="flex justify-between"><span className="italic">{company}</span><span className="italic">{location}</span></div>`
+   - Keep bullet points as-is
+5. **Projects** - Change first line to show name + technologies + dates:
+   - `<div className="flex justify-between"><span><strong>{name}</strong> | <em>{technologies}</em></span><span>{dates}</span></div>`
+6. **Section order** - Reorder: Summary (if present), Education, Experience, Projects, Skills, Certifications
+7. **Remove Summary section heading styling change** - Keep it but make it match the overall style
 
-// After (each cert on its own line with date on right)
-{certifications.map((cert) => (
-  <div key={cert.id} className="flex justify-between text-[10px]">
-    <span>{cert.name}{cert.issuer ? ` (${cert.issuer})` : ""}</span>
-    {cert.date && <span className="text-gray-600 whitespace-nowrap">{formatDate(cert.date)}</span>}
-  </div>
-))}
-```
-
-All four template files will be updated with these two changes.
+No changes to `ResumeData` type or other templates.
 
