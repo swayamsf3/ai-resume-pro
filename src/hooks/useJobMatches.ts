@@ -20,11 +20,12 @@
    missing_skills: string[];
  }
  
- interface MatchJobsResponse {
-   jobs: MatchedJob[];
-   user_skills: string[];
-   has_resume: boolean;
- }
+interface MatchJobsResponse {
+  jobs: MatchedJob[];
+  user_skills: string[];
+  has_resume: boolean;
+  experience_level?: string;
+}
  
  export function useJobMatches() {
    const { user } = useAuth();

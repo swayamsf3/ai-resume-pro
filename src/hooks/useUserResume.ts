@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { extractTextFromPDF } from "@/lib/pdfTextExtractor";
 import { extractTextWithOCR } from "@/lib/ocrExtractor";
 import { extractSkillsFromText } from "@/lib/skillExtractor";
+import { detectExperienceLevel, type ExperienceLevel } from "@/lib/experienceDetector";
 
 const MAX_SKILLS = 100;
 const MAX_SKILL_LENGTH = 50;
@@ -25,6 +26,7 @@ interface UserResume {
   resume_file_name: string | null;
   skills: string[];
   source: string;
+  experience_level: ExperienceLevel;
   raw_data: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -80,10 +82,11 @@ export function useUserResume() {
         }
       }
 
-      // Step 3: Extract skills
+      // Step 3: Extract skills & experience level
       setUploadStatus("matching");
       const skills = extractSkillsFromText(text);
-      console.log(`[Resume Upload] Detected ${skills.length} skills:`, skills);
+      const experienceLevel = detectExperienceLevel(text);
+      console.log(`[Resume Upload] Detected ${skills.length} skills, experience: ${experienceLevel}`);
 
       // Step 4: Upload file to storage for record-keeping
       setUploadStatus("uploading");
@@ -110,6 +113,7 @@ export function useUserResume() {
           resume_file_name: file.name,
           skills: validateAndSanitizeSkills(skills),
           source: "upload",
+          experience_level: experienceLevel,
           raw_data: { extracted_text: text.substring(0, 5000) } as any,
           updated_at: new Date().toISOString(),
         }, {
@@ -211,15 +215,52 @@ export function useUserResume() {
     },
   });
 
+  const updateExperienceLevel = useMutation({
+    mutationFn: async (level: ExperienceLevel) => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("user_resumes")
+        .upsert({
+          user_id: user.id,
+          experience_level: level,
+          skills: userResume?.skills || [],
+          source: userResume?.source || "manual",
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "user_id",
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-resume"] });
+      queryClient.invalidateQueries({ queryKey: ["job-matches"] });
+      toast({
+        title: "Experience level updated",
+        description: "Your job recommendations will now be tailored accordingly.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     userResume,
     isLoading,
     error,
     skills: userResume?.skills || [],
+    experienceLevel: (userResume?.experience_level || "unknown") as ExperienceLevel,
     hasResume: !!userResume && (userResume.skills?.length || 0) > 0,
     uploadResume,
     uploadStatus,
     updateSkills,
+    updateExperienceLevel,
     syncFromBuilder,
   };
 }

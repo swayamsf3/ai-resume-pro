@@ -1,0 +1,1 @@
+ALTER TABLE public.user_resumes ADD COLUMN experience_level text NOT NULL DEFAULT 'unknown';

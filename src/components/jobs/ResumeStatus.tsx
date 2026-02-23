@@ -1,15 +1,18 @@
- import { Badge } from "@/components/ui/badge";
- import { Button } from "@/components/ui/button";
- import { Card, CardContent } from "@/components/ui/card";
- import { 
-   FileText, 
-   Upload, 
-   RefreshCw, 
-   Edit2, 
-   CheckCircle2,
-   AlertCircle 
- } from "lucide-react";
- import { useUserResume } from "@/hooks/useUserResume";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  FileText, 
+  Upload, 
+  RefreshCw, 
+  Edit2, 
+  CheckCircle2,
+  AlertCircle,
+  GraduationCap,
+} from "lucide-react";
+import { useUserResume } from "@/hooks/useUserResume";
+import type { ExperienceLevel } from "@/lib/experienceDetector";
  
  interface ResumeStatusProps {
    onUploadClick: () => void;
@@ -22,7 +25,15 @@
    onEditSkillsClick,
    onSyncFromBuilder,
  }: ResumeStatusProps) {
-   const { hasResume, skills, userResume, isLoading, syncFromBuilder } = useUserResume();
+  const { hasResume, skills, userResume, isLoading, syncFromBuilder, experienceLevel, updateExperienceLevel } = useUserResume();
+
+  const LEVEL_LABELS: Record<ExperienceLevel, string> = {
+    fresher: "Fresher",
+    junior: "Junior (0-2 yrs)",
+    mid: "Mid (3-5 yrs)",
+    senior: "Senior (5+ yrs)",
+    unknown: "Not Set",
+  };
  
    if (isLoading) {
      return (
@@ -66,21 +77,47 @@
                  : "Upload a resume or sync from Resume Builder to get personalized job matches"}
              </p>
  
-             {/* Skills Badges */}
-             {hasResume && skills.length > 0 && (
-               <div className="flex flex-wrap gap-2 mb-4">
-                 {skills.slice(0, 10).map((skill) => (
-                   <Badge key={skill} variant="secondary" className="text-xs">
-                     {skill}
-                   </Badge>
-                 ))}
-                 {skills.length > 10 && (
-                   <Badge variant="outline" className="text-xs">
-                     +{skills.length - 10} more
-                   </Badge>
-                 )}
-               </div>
-             )}
+              {/* Experience Level Selector */}
+              {hasResume && (
+                <div className="flex items-center gap-2 mb-4">
+                  <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Experience:</span>
+                  <Select
+                    value={experienceLevel}
+                    onValueChange={(val) => updateExperienceLevel.mutate(val as ExperienceLevel)}
+                  >
+                    <SelectTrigger className="w-[180px] h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.entries(LEVEL_LABELS) as [ExperienceLevel, string][])
+                        .filter(([k]) => k !== "unknown")
+                        .map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {experienceLevel === "fresher" && (
+                    <Badge variant="secondary" className="text-xs">Fresher-friendly jobs prioritized</Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Skills Badges */}
+              {hasResume && skills.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {skills.slice(0, 10).map((skill) => (
+                    <Badge key={skill} variant="secondary" className="text-xs">
+                      {skill}
+                    </Badge>
+                  ))}
+                  {skills.length > 10 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{skills.length - 10} more
+                    </Badge>
+                  )}
+                </div>
+              )}
  
              {/* Actions */}
              <div className="flex flex-wrap gap-2">

@@ -242,10 +242,11 @@ const Jobs = () => {
              {jobsLoading ? (
                <p className="text-sm text-muted-foreground">Loading jobs...</p>
              ) : (
-               <p className="text-sm text-muted-foreground">
-                 Showing {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
-                 {hasResume ? " matching your profile" : ""}
-               </p>
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
+                  {hasResume ? " matching your profile" : ""}
+                  {jobData?.experience_level === "fresher" ? " · Fresher-friendly jobs prioritized" : ""}
+                </p>
              )}
            </motion.div>
  
