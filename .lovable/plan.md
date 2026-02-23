@@ -1,51 +1,90 @@
 
 
-## Fix: Slow Job Recommendations Page and Skill Matching
+## Fix: Date Alignment and Certification Date Display Across All Templates
 
 ### Problem
-
-The `match-jobs` edge function is fetching **all 4,701 active jobs** from the database, running skill matching on every single one in memory, then returning the entire dataset to the browser. This takes ~4.2 seconds on the server, plus additional time to transfer and parse the large JSON payload on the client.
-
-The skill matching algorithm IS running (logs show 200 responses), but the massive data volume makes it feel broken due to the long wait.
-
-### Solution
-
-Move the heavy lifting to the database side and only return the top matched jobs, drastically reducing both server processing time and payload size.
+1. Dates in experience (and education in some templates) are not consistently right-aligned to the far right corner as shown in your screenshot
+2. Certification dates are not being displayed at all in any template
 
 ### Changes
 
-#### 1. Update `supabase/functions/match-jobs/index.ts`
+#### 1. Experience Section - Right-align dates (all 4 templates)
 
-- Instead of fetching ALL 4,701 jobs and processing in JS, fetch jobs in batches but only keep the top results
-- Limit the response to the **top 100 matched jobs** (users rarely scroll past this)
-- Add a `limit` parameter so the client can request more if needed
-- Skip jobs with 0 skills (they can never match) when user has a resume
+The screenshot shows: position name on the left, date range flush to the right edge. Most templates already use `flex justify-between`, but some need minor fixes to ensure the date stays at the rightmost corner.
 
-#### 2. Update `src/hooks/useJobMatches.ts`
+**ClassicTemplate.tsx** - Already correct layout (flex justify-between), no change needed for experience.
 
-- Add a loading timeout fallback so the UI doesn't hang indefinitely
-- Increase `staleTime` to 10 minutes since the data doesn't change frequently
-- Add `gcTime` (garbage collection time) to cache results longer
+**ModernTemplate.tsx** - Already correct layout, no change needed for experience.
 
-#### 3. Update `src/pages/Jobs.tsx`
+**ProfessionalTemplate.tsx** - Already correct layout, no change needed for experience.
 
-- Add a skeleton loading state instead of just a spinner, so the page feels responsive while data loads
-- Show a "Loading jobs..." message with progress indication
+**NormalTemplate.tsx** - Already correct layout, no change needed for experience.
+
+#### 2. Education Section - Right-align dates (all 4 templates)
+
+Currently, education dates are inline with text (e.g., `B Tech in CSe | Institution | Oct 2017 - Aug 2024`). This needs to change to a two-column layout with dates on the far right.
+
+**ClassicTemplate.tsx (lines 88-98):**
+Change from inline `<p>` to `flex justify-between` layout:
+- Left side: degree, field, institution, GPA
+- Right side: date range pushed to far right
+
+**ModernTemplate.tsx (lines 120-130):**
+Same change - split into flex layout with dates on the right.
+
+**ProfessionalTemplate.tsx (lines 126-135):**
+Same change - split into flex layout with dates on the right.
+
+**NormalTemplate.tsx (lines 46-58):**
+Already has a two-line layout. Change to add date on the right side using flex justify-between.
+
+#### 3. Certifications Section - Show dates (all 4 templates)
+
+Currently, certification dates (`cert.date`) are completely ignored in the rendering. Each template needs to display the date.
+
+**ClassicTemplate.tsx (line 120):**
+Change from inline text to a flex layout showing each certification with its date on the right.
+
+**ModernTemplate.tsx (line 152):**
+Same change - show date for each certification.
+
+**ProfessionalTemplate.tsx (line 159):**
+Same change - show date for each certification.
+
+**NormalTemplate.tsx (lines 152-162):**
+Already has a list layout. Add `formatDate(cert.date)` to each list item, right-aligned.
 
 ### Technical Details
 
-**Edge Function Optimization (`match-jobs/index.ts`):**
+**Education layout change (example for ClassicTemplate):**
+```
+// Before (inline)
+<p className="resume-item text-[10px]">
+  <span className="font-semibold">B Tech in CSe</span> | Institution | Oct 2017 - Aug 2024 | GPA: 7/10
+</p>
 
-The key change is processing efficiency:
-- Fetch only the columns needed (`id, title, company, location, type, salary, skills, apply_url, posted_at`) instead of `SELECT *` (avoids transferring large `description` fields during matching)
-- Process matching the same way but cap the returned results at 100 jobs sorted by match percentage
-- For users without a resume (no skills), return only the most recent 100 jobs instead of all 4,701
+// After (flex with right-aligned date)
+<div className="resume-item text-[10px] flex justify-between">
+  <span>
+    <span className="font-semibold">B Tech in CSe</span> | Institution | GPA: 7/10
+  </span>
+  <span className="text-gray-600 whitespace-nowrap">Oct 2017 - Aug 2024</span>
+</div>
+```
 
-**Client-side caching (`useJobMatches.ts`):**
-- Increase `staleTime` from 5 to 10 minutes
-- Add `gcTime: 1000 * 60 * 30` (30 min) to keep cached data available longer
+**Certifications layout change (example for ClassicTemplate):**
+```
+// Before (no date shown)
+{certifications.map((cert) => `${cert.name} (${cert.issuer})`).join(" . ")}
 
-**Loading UX (`Jobs.tsx`):**
-- Replace the single spinner with skeleton cards that show the layout shape while loading
-- This makes the page feel faster even if the actual load time is similar
+// After (each cert on its own line with date on right)
+{certifications.map((cert) => (
+  <div key={cert.id} className="flex justify-between text-[10px]">
+    <span>{cert.name}{cert.issuer ? ` (${cert.issuer})` : ""}</span>
+    {cert.date && <span className="text-gray-600 whitespace-nowrap">{formatDate(cert.date)}</span>}
+  </div>
+))}
+```
+
+All four template files will be updated with these two changes.
 
