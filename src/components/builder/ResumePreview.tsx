@@ -127,13 +127,14 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       // Cleanup temporary container
       document.body.removeChild(tempContainer);
 
-      // A4 dimensions in mm
+      // Convert full canvas to image
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const pdfWidth = 210;
       const pdfHeight = 297;
-      
-      // Calculate how many pages we need
-      const pageHeightInCanvasPixels = (canvas.width * pdfHeight) / pdfWidth;
-      const pdfTotalPages = Math.ceil(canvas.height / pageHeightInCanvasPixels);
+
+      // Calculate total image height in mm (proportional to width)
+      const imgHeightMm = (canvas.height * pdfWidth) / canvas.width;
+      const pdfTotalPages = Math.ceil(imgHeightMm / pdfHeight);
 
       const pdf = new jsPDF({
         orientation: "p",
@@ -143,44 +144,9 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       });
 
       for (let page = 0; page < pdfTotalPages; page++) {
-        if (page > 0) {
-          pdf.addPage();
-        }
-
-        // Calculate the portion of canvas for this page
-        const sourceY = page * pageHeightInCanvasPixels;
-        const sourceHeight = Math.min(
-          pageHeightInCanvasPixels,
-          canvas.height - sourceY
-        );
-
-        // Create a temporary canvas for this page slice
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        const ctx = pageCanvas.getContext('2d');
-        
-        if (ctx) {
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          ctx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sourceHeight,
-            0, 0, canvas.width, sourceHeight
-          );
-        }
-
-        // Calculate the height for this page in mm
-        const pageHeightMm = (sourceHeight / canvas.width) * pdfWidth;
-
-        pdf.addImage(
-          pageCanvas.toDataURL('image/jpeg', 0.92),
-          'JPEG',
-          0,
-          0,
-          pdfWidth,
-          pageHeightMm
-        );
+        if (page > 0) pdf.addPage();
+        // Place the full image with negative Y offset to show correct page slice
+        pdf.addImage(imgData, 'JPEG', 0, -(page * pdfHeight), pdfWidth, imgHeightMm);
       }
 
       // Generate filename from user's name or default
@@ -294,13 +260,17 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       {/* Hidden content for measuring full height */}
       <div 
         ref={contentMeasureRef}
-        className="absolute left-[-9999px]"
         style={{ 
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          visibility: 'hidden' as const,
           width: `${PAGE_WIDTH_PX}px`, 
           padding: `${CONTENT_PADDING}px`,
           background: '#fff', 
           color: '#111',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box' as const,
+          display: 'block',
         }}
       >
         {hasContent && renderTemplate()}
