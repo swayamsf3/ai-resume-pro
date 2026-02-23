@@ -1,4 +1,4 @@
-# AI Resume Pro
+# AI Resume Builder
 
 An intelligent resume builder and job matching platform that helps job seekers create professional resumes and find the best job opportunities based on their skills and experience level.
 
