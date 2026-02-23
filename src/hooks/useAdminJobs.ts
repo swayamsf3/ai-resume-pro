@@ -89,6 +89,36 @@ export const useAdminJobs = () => {
     },
   });
 
+  const atsMutation = useMutation({
+    mutationFn: async ({ secret }: { secret: string }) => {
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers: { "x-ingest-key": secret, "Content-Type": "application/json" },
+        body: JSON.stringify({ atsOnly: true }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      const results = data.results as Record<string, { upserted: number; deactivated: number }> | undefined;
+      let description = "ATS ingestion completed.";
+      if (results) {
+        const lines = Object.entries(results).map(
+          ([source, stats]) => `${source}: ${stats.upserted} upserted, ${stats.deactivated} deactivated`
+        );
+        description = lines.join("\n");
+      }
+      toast({ title: "ATS ingestion complete", description });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "ATS ingestion failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (jobId: string) => {
       const { error } = await supabase.from("jobs").delete().eq("id", jobId);
@@ -103,5 +133,5 @@ export const useAdminJobs = () => {
     },
   });
 
-  return { jobsQuery, ingestMutation, jsearchMutation, deleteMutation };
+  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deleteMutation };
 };
