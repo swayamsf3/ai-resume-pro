@@ -11,6 +11,8 @@
    ExternalLink,
    Bookmark,
    Check,
+   Trash2,
+   Loader2,
  } from "lucide-react";
  import { MatchedJob } from "@/hooks/useJobMatches";
  import { formatDistanceToNow } from "date-fns";
@@ -21,9 +23,11 @@
    isSaved: boolean;
    onToggleSave: () => void;
    hasUserSkills: boolean;
+   onDelete?: () => void;
+   isDeleting?: boolean;
  }
  
- export function JobCard({ job, index, isSaved, onToggleSave, hasUserSkills }: JobCardProps) {
+ export function JobCard({ job, index, isSaved, onToggleSave, hasUserSkills, onDelete, isDeleting }: JobCardProps) {
    const getMatchColor = (percentage: number) => {
      if (percentage >= 90) return "bg-green-500/10 text-green-600 border-green-500/20";
      if (percentage >= 70) return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
@@ -142,6 +146,18 @@
                    />
                    {isSaved ? "Saved" : "Save"}
                  </Button>
+                 {onDelete && (
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     className="gap-2 text-destructive hover:text-destructive"
+                     onClick={onDelete}
+                     disabled={isDeleting}
+                   >
+                     {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                     Delete
+                   </Button>
+                 )}
                </div>
              </div>
            </div>
