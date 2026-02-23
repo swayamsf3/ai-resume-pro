@@ -1,63 +1,82 @@
 
+## Fix: PDF Content Cut Off - Proper Multi-Page Pagination
 
-## Redesign Modern Template to Match Jake's Resume Format
+### Problem
+The PDF generation captures the full content as a single canvas via html2canvas, but the clone's `scrollHeight` isn't being reliably measured because the temp container uses `position: absolute` which can collapse dimensions. Content beyond page 1 gets cut off.
 
-### Overview
+### Root Cause
+Two issues in the `handleDownload` function:
+1. The temp container uses `position: absolute` which can cause unreliable height calculation
+2. The clone doesn't get explicit width/height forced before html2canvas runs, so the canvas may not capture everything
 
-Completely restyle the Modern Template to match the classic "Jake's Resume" LaTeX template - a clean, professional, ATS-friendly format widely used in tech.
+### Fix (single file: `src/components/builder/ResumePreview.tsx`)
 
-### Key Design Changes
+**Changes to the `handleDownload` function (lines 83-114):**
 
-**Header:**
-- Name large and centered (not left-aligned)
-- Contact info centered below name on one line, separated by pipes (phone | email | linkedin | portfolio)
+1. **Use `position: fixed`** for the temp container instead of `absolute` - more reliable off-screen rendering
+2. **Copy the same padding/box-sizing** from the measurement div onto the clone so layout matches exactly
+3. **Wait 300ms** instead of 100ms for fonts/layout to settle
+4. **Read `scrollHeight` after append** and set explicit `height` on the clone so html2canvas captures the full content
+5. **Pass explicit `width`, `height`, `windowWidth`, `windowHeight`** to html2canvas so it knows the exact dimensions to render
 
-**Section Headers:**
-- Small caps / uppercase with a thin horizontal rule underneath
-- Consistent across all sections
-
-**Section Order:**
-- Education, Experience, Projects, Technical Skills, Certifications (Education moves up before Experience)
-
-**Education Section:**
-- Row 1: Institution bold (left) + Location right-aligned
-- Row 2: Degree italic (left) + Date range italic right-aligned
-- GPA shown inline with degree if present
-
-**Experience Section:**
-- Row 1: Position bold (left) + Date range right-aligned
-- Row 2: Company italic (left) + Location italic right-aligned
-- Bullet points below
-
-**Projects Section:**
-- Row 1: Project name bold + pipe + technologies italic (left) + Date range right-aligned (if available)
-- Bullet points below
-
-**Technical Skills:**
-- Single comma-separated list (matching existing data structure)
-
-**Certifications:**
-- Keep existing layout (name + issuer left, date right) - fits Jake's style naturally
+The page-slicing logic (lines 131-170) already works correctly - it creates per-page canvas slices from the full canvas. The only problem is the full canvas not capturing all content.
 
 ### Technical Details
 
-**File: `src/components/builder/templates/ModernTemplate.tsx`**
+Replace lines 83-111 with:
 
-Full rewrite of the JSX layout:
+```typescript
+// Create a temporary container for full-height rendering
+const tempContainer = document.createElement('div');
+tempContainer.style.position = 'fixed';
+tempContainer.style.left = '-9999px';
+tempContainer.style.top = '0';
+tempContainer.style.width = `${PAGE_WIDTH_PX}px`;
+tempContainer.style.background = 'white';
+tempContainer.style.zIndex = '-1';
 
-1. **Header** - Change from `flex justify-between` to `text-center` for name and contact info
-2. **Section headers** - Add a thin border-bottom line under each section title using small-caps styling
-3. **Education** - Change from single-line flex to a two-line block per entry:
-   - Line 1: `<div className="flex justify-between"><span className="font-bold">{institution}</span><span>{location}</span></div>`
-   - Line 2: `<div className="flex justify-between"><span className="italic">{degree} in {field}</span><span className="italic">{dates}</span></div>`
-4. **Experience** - Change to two-line header per entry:
-   - Line 1: `<div className="flex justify-between"><span className="font-bold">{position}</span><span>{dates}</span></div>`
-   - Line 2: `<div className="flex justify-between"><span className="italic">{company}</span><span className="italic">{location}</span></div>`
-   - Keep bullet points as-is
-5. **Projects** - Change first line to show name + technologies + dates:
-   - `<div className="flex justify-between"><span><strong>{name}</strong> | <em>{technologies}</em></span><span>{dates}</span></div>`
-6. **Section order** - Reorder: Summary (if present), Education, Experience, Projects, Skills, Certifications
-7. **Remove Summary section heading styling change** - Keep it but make it match the overall style
+// Clone the resume content
+const clone = element.cloneNode(true) as HTMLElement;
+clone.style.position = 'relative';
+clone.style.left = '0';
+clone.style.maxHeight = 'none';
+clone.style.overflow = 'visible';
+clone.style.height = 'auto';
+clone.style.width = `${PAGE_WIDTH_PX}px`;
+clone.style.padding = `${CONTENT_PADDING}px`;
+clone.style.boxSizing = 'border-box';
+clone.style.color = '#111';
+clone.style.background = '#ffffff';
 
-No changes to `ResumeData` type or other templates.
+tempContainer.appendChild(clone);
+document.body.appendChild(tempContainer);
 
+// Wait for fonts and layout to fully render
+await new Promise(resolve => setTimeout(resolve, 300));
+
+// Force explicit height so html2canvas captures everything
+const fullHeight = clone.scrollHeight;
+clone.style.height = `${fullHeight}px`;
+
+// Render to canvas with explicit dimensions
+const canvas = await html2canvas(clone, {
+  scale: 2,
+  useCORS: true,
+  logging: false,
+  backgroundColor: "#ffffff",
+  width: PAGE_WIDTH_PX,
+  height: fullHeight,
+  windowWidth: PAGE_WIDTH_PX,
+  windowHeight: fullHeight,
+});
+```
+
+### What stays the same
+- The page-slicing logic (lines 116-170) is already correct and doesn't need changes
+- The Supabase upload logic stays the same
+- The preview rendering stays the same
+
+### Expected Result
+- Full canvas captures all resume content regardless of length
+- Existing slicing logic correctly splits it into A4 pages
+- No content cut off on page 2+
