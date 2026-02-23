@@ -82,32 +82,46 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
 
       // Create a temporary container for full-height rendering
       const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
+      tempContainer.style.position = 'fixed';
       tempContainer.style.left = '-9999px';
       tempContainer.style.top = '0';
       tempContainer.style.width = `${PAGE_WIDTH_PX}px`;
       tempContainer.style.background = 'white';
-      
+      tempContainer.style.zIndex = '-1';
+
       // Clone the resume content
       const clone = element.cloneNode(true) as HTMLElement;
+      clone.style.position = 'relative';
+      clone.style.left = '0';
       clone.style.maxHeight = 'none';
       clone.style.overflow = 'visible';
       clone.style.height = 'auto';
-      
+      clone.style.width = `${PAGE_WIDTH_PX}px`;
+      clone.style.padding = `${CONTENT_PADDING}px`;
+      clone.style.boxSizing = 'border-box';
+      clone.style.color = '#111';
+      clone.style.background = '#ffffff';
+
       tempContainer.appendChild(clone);
       document.body.appendChild(tempContainer);
 
-      // Wait for fonts and images to load
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for fonts and layout to fully render
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Render to canvas with high scale for crisp text
+      // Force explicit height so html2canvas captures everything
+      const fullHeight = clone.scrollHeight;
+      clone.style.height = `${fullHeight}px`;
+
+      // Render to canvas with explicit dimensions
       const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: clone.scrollWidth,
-        height: clone.scrollHeight,
+        width: PAGE_WIDTH_PX,
+        height: fullHeight,
+        windowWidth: PAGE_WIDTH_PX,
+        windowHeight: fullHeight,
       });
 
       // Cleanup temporary container
