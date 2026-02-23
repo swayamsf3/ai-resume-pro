@@ -1,14 +1,37 @@
 
-## Update: Reduce Project Description Bullets to 3-4
 
-### Change
-Update both the system prompt and user prompt in `supabase/functions/generate-resume-content/index.ts` to generate 3-4 bullets instead of 4-5. Word limits per bullet (20-25 words) and total output (120-180 words) stay unchanged.
+## Add Delete Button to Admin Jobs Panel
 
-### Edits
+### Overview
+Add a delete button on each job row in the admin panel, allowing the admin to remove jobs from the database. This requires both a database policy change (to allow deletes) and a frontend UI update.
 
-**Line 54 (system prompt):** Change "Generate 4-5 detailed bullet points" to "Generate 3-4 detailed bullet points"
+### 1. Database: Add RLS DELETE Policy for Admin
 
-**Line 59 (user prompt):** Change "4-5 bullets" to "3-4 bullets"
+Currently the `jobs` table has no DELETE policy. We need to add one that only allows the admin (identified by email) to delete jobs.
 
-### File
-`supabase/functions/generate-resume-content/index.ts` -- redeploy after edit
+```sql
+CREATE POLICY "Admin can delete jobs"
+  ON jobs
+  FOR DELETE
+  USING (auth.jwt() ->> 'email' = 'swayamyawalkar54@gmail.com');
+```
+
+This uses the JWT claim to verify the admin email, matching the existing frontend check.
+
+### 2. Frontend: Add Delete Mutation to `useAdminJobs.ts`
+
+Add a `deleteMutation` using `supabase.from("jobs").delete().eq("id", jobId)` with success/error toasts and query invalidation.
+
+### 3. Frontend: Add Delete Button to `AdminJobs.tsx`
+
+- Import `Trash2` icon from lucide-react
+- Add a new "Actions" column to the jobs table
+- Add a delete button (small, destructive variant) in each row
+- Include a confirmation dialog (using `AlertDialog`) before deleting to prevent accidental deletions
+- Show a loading spinner on the button while deletion is in progress
+
+### Files Changed
+- **SQL Migration**: Add DELETE RLS policy on `jobs` table
+- **`src/hooks/useAdminJobs.ts`**: Add `deleteMutation`
+- **`src/pages/AdminJobs.tsx`**: Add Actions column with delete button + confirmation dialog
+
