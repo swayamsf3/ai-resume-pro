@@ -125,9 +125,14 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
             <div className="space-y-0.5">
               {education.map((edu) => (
                 <div key={edu.id} className="resume-item text-[10px]">
-                  <p className="font-bold">{edu.degree}{edu.field && ` — ${edu.field}`}</p>
+                  <div className="flex justify-between">
+                    <span className="font-bold">{edu.degree}{edu.field && ` — ${edu.field}`}</span>
+                    <span className="text-gray-600 whitespace-nowrap ml-2">
+                      {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
+                    </span>
+                  </div>
                   <p className="text-gray-700">
-                    {edu.institution} | {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
+                    {edu.institution}
                     {edu.gpa && ` | GPA: ${edu.gpa}`}
                   </p>
                 </div>
@@ -155,9 +160,14 @@ const ProfessionalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           <h2 className="text-[10px] font-bold uppercase mb-1">
             Certifications
           </h2>
-          <p className="text-[10px] leading-snug">
-            {certifications.map((cert) => `${cert.name}${cert.issuer ? ` (${cert.issuer})` : ""}`).join(" • ")}
-          </p>
+          <div className="space-y-0.5">
+            {certifications.map((cert) => (
+              <div key={cert.id} className="flex justify-between text-[10px]">
+                <span>{cert.name}{cert.issuer ? ` (${cert.issuer})` : ""}</span>
+                {cert.date && <span className="text-gray-600 whitespace-nowrap ml-2">{formatDate(cert.date)}</span>}
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>

@@ -46,10 +46,14 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           <div className="space-y-0.5">
             {education.map((edu) => (
               <div key={edu.id} className="resume-item text-[10px]">
-                <p className="font-semibold">
-                  {edu.degree}{edu.field && ` – ${edu.field}`}
-                  {edu.startDate && ` (${formatDate(edu.startDate)}–${formatDate(edu.endDate)})`}
-                </p>
+                <div className="flex justify-between">
+                  <span className="font-semibold">
+                    {edu.degree}{edu.field && ` – ${edu.field}`}
+                  </span>
+                  <span className="text-gray-600 whitespace-nowrap ml-2">
+                    {formatDate(edu.startDate)} – {formatDate(edu.endDate)}
+                  </span>
+                </div>
                 <p className="text-gray-700">
                   {edu.institution}
                   {edu.gpa && ` | CGPA: ${edu.gpa}`}
@@ -149,17 +153,18 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Certifications
           </h2>
-          <ul className="text-[10px] leading-snug list-none space-y-0.5">
+          <div className="space-y-0.5">
             {certifications.map((cert) => (
-              <li key={cert.id} className="resume-item flex gap-1">
-                <span>•</span>
+              <div key={cert.id} className="resume-item flex justify-between text-[10px]">
                 <span>
+                  <span className="mr-1">•</span>
                   {cert.name}
                   {cert.issuer && ` – ${cert.issuer}`}
                 </span>
-              </li>
+                {cert.date && <span className="text-gray-600 whitespace-nowrap ml-2">{formatDate(cert.date)}</span>}
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
     </div>
