@@ -14,7 +14,12 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe, Search } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 
 const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
@@ -22,7 +27,7 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation, jsearchMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation, deleteMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
@@ -199,41 +204,70 @@ const AdminJobs = () => {
                     <TableHead className="hidden md:table-cell">Location</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead className="hidden lg:table-cell">External ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Posted</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredJobs.map((job) => (
-                    <TableRow key={job.id}>
-                      <TableCell className="font-medium">{job.title}</TableCell>
-                      <TableCell>{job.company}</TableCell>
-                      <TableCell className="hidden md:table-cell">{job.location}</TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          job.source === "adzuna" || job.source === "themuse" || job.source === "jsearch"
-                            ? "default"
-                            : job.source === "manual"
-                            ? "secondary"
-                            : "outline"
-                        }>
-                          {job.source}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground text-xs">
-                        {job.external_id ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={job.is_active ? "default" : "destructive"}>
-                          {job.is_active ? "active" : "inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
-                        {new Date(job.posted_at).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                     <TableHead>Status</TableHead>
+                     <TableHead className="hidden md:table-cell">Posted</TableHead>
+                     <TableHead>Actions</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {filteredJobs.map((job) => (
+                     <TableRow key={job.id}>
+                       <TableCell className="font-medium">{job.title}</TableCell>
+                       <TableCell>{job.company}</TableCell>
+                       <TableCell className="hidden md:table-cell">{job.location}</TableCell>
+                       <TableCell>
+                         <Badge variant={
+                           job.source === "adzuna" || job.source === "themuse" || job.source === "jsearch"
+                             ? "default"
+                             : job.source === "manual"
+                             ? "secondary"
+                             : "outline"
+                         }>
+                           {job.source}
+                         </Badge>
+                       </TableCell>
+                       <TableCell className="hidden lg:table-cell text-muted-foreground text-xs">
+                         {job.external_id ?? "—"}
+                       </TableCell>
+                       <TableCell>
+                         <Badge variant={job.is_active ? "default" : "destructive"}>
+                           {job.is_active ? "active" : "inactive"}
+                         </Badge>
+                       </TableCell>
+                       <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
+                         {new Date(job.posted_at).toLocaleDateString()}
+                       </TableCell>
+                       <TableCell>
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                               {deleteMutation.isPending && deleteMutation.variables === job.id
+                                 ? <Loader2 className="w-4 h-4 animate-spin" />
+                                 : <Trash2 className="w-4 h-4" />}
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 This will permanently remove "{job.title}" at {job.company}. This action cannot be undone.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction
+                                 onClick={() => deleteMutation.mutate(job.id)}
+                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                               >
+                                 Delete
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
               </Table>
             )}
           </CardContent>

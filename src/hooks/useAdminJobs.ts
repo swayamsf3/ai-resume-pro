@@ -89,5 +89,19 @@ export const useAdminJobs = () => {
     },
   });
 
-  return { jobsQuery, ingestMutation, jsearchMutation };
+  const deleteMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const { error } = await supabase.from("jobs").delete().eq("id", jobId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Job deleted", description: "The job has been removed." });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { jobsQuery, ingestMutation, jsearchMutation, deleteMutation };
 };
