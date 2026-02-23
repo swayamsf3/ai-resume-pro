@@ -14,7 +14,7 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2 } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,7 +27,7 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation, jsearchMutation, deleteMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deleteMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
@@ -46,15 +46,17 @@ const AdminJobs = () => {
     const feed = jobs.filter((j) => j.source === "employer_feed").length;
     const adzunaMuse = jobs.filter((j) => j.source === "adzuna" || j.source === "themuse").length;
     const jsearch = jobs.filter((j) => j.source === "jsearch").length;
+    const ats = jobs.filter((j) => j.source.startsWith("greenhouse_") || j.source.startsWith("lever_")).length;
     const active = jobs.filter((j) => j.is_active).length;
     const inactive = jobs.length - active;
-    return { total: jobs.length, manual, feed, adzunaMuse, jsearch, active, inactive };
+    return { total: jobs.length, manual, feed, adzunaMuse, jsearch, ats, active, inactive };
   }, [jobsQuery.data]);
 
   const filteredJobs = useMemo(() => {
     const jobs = jobsQuery.data ?? [];
     if (sourceFilter === "all") return jobs;
     if (sourceFilter === "real_api") return jobs.filter((j) => j.source === "adzuna" || j.source === "themuse" || j.source === "jsearch");
+    if (sourceFilter === "ats") return jobs.filter((j) => j.source.startsWith("greenhouse_") || j.source.startsWith("lever_"));
     return jobs.filter((j) => j.source === sourceFilter);
   }, [jobsQuery.data, sourceFilter]);
 
@@ -73,11 +75,12 @@ const AdminJobs = () => {
         </motion.h1>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           {[
             { label: "Total Jobs", value: stats.total, icon: Database },
             { label: "Adzuna + Muse", value: stats.adzunaMuse, icon: Globe },
             { label: "JSearch", value: stats.jsearch, icon: Search },
+            { label: "ATS (GH+Lever)", value: stats.ats, icon: Building2 },
             { label: "Employer Feed", value: stats.feed, icon: Activity },
             { label: "Manual", value: stats.manual, icon: Layers },
             { label: "Active / Inactive", value: `${stats.active} / ${stats.inactive}`, icon: Activity },
@@ -171,6 +174,39 @@ const AdminJobs = () => {
           </CardContent>
         </Card>
 
+        {/* ATS Ingestion Trigger */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              ATS Ingestion (Greenhouse + Lever)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                type="password"
+                placeholder="INGEST_SECRET"
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                className="sm:max-w-xs"
+              />
+              <Button
+                onClick={() => atsMutation.mutate({ secret })}
+                disabled={!secret || atsMutation.isPending}
+                variant="secondary"
+                className="gap-2"
+              >
+                {atsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
+                Run ATS Ingestion
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Fetches jobs from 20 companies via Greenhouse & Lever public APIs. Per-company deactivation. No API key needed. Sequential with 500ms delays.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Jobs Table */}
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -182,6 +218,7 @@ const AdminJobs = () => {
               <SelectContent>
                 <SelectItem value="all">All Sources</SelectItem>
                 <SelectItem value="real_api">All APIs</SelectItem>
+                <SelectItem value="ats">ATS (GH + Lever)</SelectItem>
                 <SelectItem value="adzuna">Adzuna</SelectItem>
                 <SelectItem value="themuse">The Muse</SelectItem>
                 <SelectItem value="jsearch">JSearch</SelectItem>
@@ -215,17 +252,18 @@ const AdminJobs = () => {
                        <TableCell className="font-medium">{job.title}</TableCell>
                        <TableCell>{job.company}</TableCell>
                        <TableCell className="hidden md:table-cell">{job.location}</TableCell>
-                       <TableCell>
-                         <Badge variant={
-                           job.source === "adzuna" || job.source === "themuse" || job.source === "jsearch"
-                             ? "default"
-                             : job.source === "manual"
-                             ? "secondary"
-                             : "outline"
-                         }>
-                           {job.source}
-                         </Badge>
-                       </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            job.source === "adzuna" || job.source === "themuse" || job.source === "jsearch"
+                              || job.source.startsWith("greenhouse_") || job.source.startsWith("lever_")
+                              ? "default"
+                              : job.source === "manual"
+                              ? "secondary"
+                              : "outline"
+                          }>
+                            {job.source}
+                          </Badge>
+                        </TableCell>
                        <TableCell className="hidden lg:table-cell text-muted-foreground text-xs">
                          {job.external_id ?? "—"}
                        </TableCell>

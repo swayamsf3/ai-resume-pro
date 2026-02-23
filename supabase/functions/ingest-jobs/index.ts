@@ -283,6 +283,131 @@ async function fetchMuseJobs(): Promise<NormalizedJob[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Greenhouse ATS fetcher — per-company, sequential
+// ---------------------------------------------------------------------------
+
+const GREENHOUSE_COMPANIES = [
+  { slug: "razorpay", name: "Razorpay" },
+  { slug: "swiggy", name: "Swiggy" },
+  { slug: "zomato", name: "Zomato" },
+  { slug: "flipkart", name: "Flipkart" },
+  { slug: "phonepe", name: "PhonePe" },
+  { slug: "meesho", name: "Meesho" },
+  { slug: "cred", name: "CRED" },
+  { slug: "groww", name: "Groww" },
+  { slug: "postman", name: "Postman" },
+  { slug: "notion", name: "Notion" },
+  { slug: "atlassian", name: "Atlassian" },
+  { slug: "coinbase", name: "Coinbase" },
+  { slug: "stripe", name: "Stripe" },
+  { slug: "freshworks", name: "Freshworks" },
+  { slug: "browserstack", name: "Browserstack" },
+  { slug: "chargebee", name: "Chargebee" },
+];
+
+const LEVER_COMPANIES = [
+  { slug: "zerodha", name: "Zerodha" },
+  { slug: "gojek", name: "Gojek" },
+  { slug: "urbancompany", name: "Urban Company" },
+  { slug: "olacabs", name: "Ola" },
+];
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+async function fetchGreenhouseJobs(): Promise<{ jobsByCompany: Record<string, NormalizedJob[]> }> {
+  const jobsByCompany: Record<string, NormalizedJob[]> = {};
+
+  for (const company of GREENHOUSE_COMPANIES) {
+    const source = `greenhouse_${company.slug}`;
+    jobsByCompany[source] = [];
+    try {
+      const url = `https://boards-api.greenhouse.io/v1/boards/${company.slug}/jobs?content=true`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        console.log(`Greenhouse ${company.slug}: HTTP ${res.status} — skipping`);
+        continue;
+      }
+      const data = await res.json();
+      const jobs = data.jobs ?? [];
+
+      for (const job of jobs) {
+        const desc = job.content ? stripHtml(job.content).slice(0, 2000) : null;
+        jobsByCompany[source].push({
+          title: job.title ?? "Untitled",
+          company: company.name,
+          location: job.location?.name ?? "Unknown",
+          type: "Full-time",
+          salary: null,
+          description: desc,
+          skills: extractSkillsFromText(desc ?? ""),
+          apply_url: job.absolute_url ?? `https://boards.greenhouse.io/${company.slug}/jobs/${job.id}`,
+          external_id: `greenhouse_${company.slug}_${job.id}`,
+          source,
+          is_active: true,
+          posted_at: job.updated_at ? new Date(job.updated_at).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      console.log(`Greenhouse ${company.slug}: ${jobs.length} jobs`);
+    } catch (err) {
+      console.error(`Greenhouse ${company.slug} error:`, err);
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return { jobsByCompany };
+}
+
+async function fetchLeverJobs(): Promise<{ jobsByCompany: Record<string, NormalizedJob[]> }> {
+  const jobsByCompany: Record<string, NormalizedJob[]> = {};
+
+  for (const company of LEVER_COMPANIES) {
+    const source = `lever_${company.slug}`;
+    jobsByCompany[source] = [];
+    try {
+      const url = `https://api.lever.co/v0/postings/${company.slug}?mode=json`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        console.log(`Lever ${company.slug}: HTTP ${res.status} — skipping`);
+        continue;
+      }
+      const postings = await res.json();
+      if (!Array.isArray(postings)) {
+        console.log(`Lever ${company.slug}: unexpected response — skipping`);
+        continue;
+      }
+
+      for (const posting of postings) {
+        const desc = (posting.descriptionPlain ?? "").slice(0, 2000) || null;
+        jobsByCompany[source].push({
+          title: posting.text ?? "Untitled",
+          company: company.name,
+          location: posting.categories?.location ?? "Unknown",
+          type: "Full-time",
+          salary: null,
+          description: desc,
+          skills: extractSkillsFromText(desc ?? ""),
+          apply_url: posting.hostedUrl ?? `https://jobs.lever.co/${company.slug}/${posting.id}`,
+          external_id: `lever_${company.slug}_${posting.id}`,
+          source,
+          is_active: true,
+          posted_at: posting.createdAt ? new Date(posting.createdAt).toISOString() : new Date().toISOString(),
+        });
+      }
+
+      console.log(`Lever ${company.slug}: ${postings.length} jobs`);
+    } catch (err) {
+      console.error(`Lever ${company.slug} error:`, err);
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return { jobsByCompany };
+}
+
+// ---------------------------------------------------------------------------
 // Upsert + deactivate helper
 // ---------------------------------------------------------------------------
 
@@ -449,13 +574,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Parse request body for seedMode and jsearchOnly flags
+    // Parse request body for seedMode, jsearchOnly, and atsOnly flags
     let seedMode = false;
     let jsearchOnly = false;
+    let atsOnly = false;
     try {
       const body = await req.json();
       seedMode = body?.seedMode === true;
       jsearchOnly = body?.jsearchOnly === true;
+      atsOnly = body?.atsOnly === true;
     } catch {
       // No body or invalid JSON — default to daily mode
     }
@@ -464,8 +591,8 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Seed mode cooldown check
-    if (seedMode) {
+    // Seed mode cooldown check (skip for atsOnly)
+    if (seedMode && !atsOnly) {
       if (jsearchOnly) {
         const recentlySeeded = await checkJSearchSeedCooldown(supabase);
         if (recentlySeeded) {
@@ -489,14 +616,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    const modeLabel = jsearchOnly ? "JSEARCH-ONLY" : seedMode ? "SEED" : "DAILY";
+    const modeLabel = atsOnly ? "ATS-ONLY" : jsearchOnly ? "JSEARCH-ONLY" : seedMode ? "SEED" : "DAILY";
     console.log(`Ingestion started — mode: ${modeLabel}`);
 
     const results: Record<string, { upserted: number; deactivated: number }> = {};
     let adzunaApiRequests = 0;
     let jsearchApiRequests = 0;
 
-    if (jsearchOnly) {
+    if (atsOnly) {
+      // ATS-only mode: Greenhouse + Lever only
+      console.log("Running ATS ingestion (Greenhouse + Lever)...");
+      const [ghResult, leverResult] = await Promise.all([
+        fetchGreenhouseJobs(),
+        fetchLeverJobs(),
+      ]);
+
+      // Upsert per-company with deactivation
+      for (const [source, jobs] of Object.entries(ghResult.jobsByCompany)) {
+        if (jobs.length > 0) {
+          results[source] = await upsertAndDeactivate(supabase, source, jobs, source, true);
+        } else {
+          results[source] = { upserted: 0, deactivated: 0 };
+        }
+      }
+      for (const [source, jobs] of Object.entries(leverResult.jobsByCompany)) {
+        if (jobs.length > 0) {
+          results[source] = await upsertAndDeactivate(supabase, source, jobs, source, true);
+        } else {
+          results[source] = { upserted: 0, deactivated: 0 };
+        }
+      }
+    } else if (jsearchOnly) {
       // JSearch-only mode
       const jsearchResult = await fetchJSearchJobs(seedMode);
       jsearchApiRequests = jsearchResult.apiRequests;
@@ -508,6 +658,7 @@ Deno.serve(async (req) => {
       }
     } else {
       // Full ingestion: Adzuna + The Muse + JSearch in parallel
+      // ATS sources only run in seed mode
       const [adzunaResult, museJobs, jsearchResult] = await Promise.all([
         fetchAdzunaJobs(seedMode),
         fetchMuseJobs(),
@@ -537,6 +688,26 @@ Deno.serve(async (req) => {
       } else {
         results["JSearch"] = { upserted: 0, deactivated: 0 };
       }
+
+      // Also run ATS in seed mode
+      if (seedMode) {
+        console.log("Seed mode: also running ATS ingestion...");
+        const [ghResult, leverResult] = await Promise.all([
+          fetchGreenhouseJobs(),
+          fetchLeverJobs(),
+        ]);
+
+        for (const [source, jobs] of Object.entries(ghResult.jobsByCompany)) {
+          if (jobs.length > 0) {
+            results[source] = await upsertAndDeactivate(supabase, source, jobs, source, true);
+          }
+        }
+        for (const [source, jobs] of Object.entries(leverResult.jobsByCompany)) {
+          if (jobs.length > 0) {
+            results[source] = await upsertAndDeactivate(supabase, source, jobs, source, true);
+          }
+        }
+      }
     }
 
     // Cleanup old inactive jobs
@@ -547,7 +718,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        mode: jsearchOnly ? "jsearch-only" : seedMode ? "seed" : "daily",
+        mode: atsOnly ? "ats-only" : jsearchOnly ? "jsearch-only" : seedMode ? "seed" : "daily",
         adzunaApiRequests,
         jsearchApiRequests,
         deletedInactiveJobs: deletedCount,
