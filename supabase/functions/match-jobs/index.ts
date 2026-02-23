@@ -145,10 +145,10 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's skills
+    // Get user's skills and experience level
     const { data: userResume, error: resumeError } = await supabaseAdmin
       .from("user_resumes")
-      .select("skills")
+      .select("skills, experience_level")
       .eq("user_id", user.id)
       .single();
 
@@ -157,7 +157,17 @@ Deno.serve(async (req) => {
     }
 
     const userSkills: string[] = userResume?.skills || [];
+    const experienceLevel: string = userResume?.experience_level || "unknown";
     const hasSkills = userSkills.length > 0;
+
+    const SENIOR_TITLE_KEYWORDS = [
+      "senior", "sr.", "lead", "principal", "staff", "architect",
+      "director", "vp", "head of", "manager",
+    ];
+    const FRESHER_TITLE_KEYWORDS = [
+      "intern", "trainee", "junior", "jr.", "entry level",
+      "associate", "fresher", "graduate",
+    ];
 
     // If no skills, just return the most recent jobs (no matching needed)
     if (!hasSkills) {
@@ -185,7 +195,7 @@ Deno.serve(async (req) => {
       }));
 
       return new Response(
-        JSON.stringify({ jobs, user_skills: userSkills, has_resume: false }),
+        JSON.stringify({ jobs, user_skills: userSkills, has_resume: false, experience_level: experienceLevel }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -229,10 +239,28 @@ Deno.serve(async (req) => {
 
         // Only keep jobs with at least some match
         if (matchPercentage > 0) {
+          let adjustedScore = matchPercentage;
+
+          // Experience-level score adjustment (not hard filter)
+          if (experienceLevel === "fresher") {
+            const titleLower = job.title.toLowerCase();
+            if (SENIOR_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) {
+              adjustedScore -= 40; // Penalize senior jobs heavily
+            }
+            if (FRESHER_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) {
+              adjustedScore += 15; // Boost fresher-friendly jobs
+            }
+          } else if (experienceLevel === "senior") {
+            const titleLower = job.title.toLowerCase();
+            if (FRESHER_TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) {
+              adjustedScore -= 20; // Penalize intern/trainee jobs for seniors
+            }
+          }
+
           topJobs.push({
             ...job,
             description: null,
-            match_percentage: matchPercentage,
+            match_percentage: Math.max(0, Math.min(100, adjustedScore)),
             matching_skills: matchingSkills,
             missing_skills: missingSkills,
           });
@@ -252,6 +280,7 @@ Deno.serve(async (req) => {
         jobs: topJobs,
         user_skills: userSkills,
         has_resume: true,
+        experience_level: experienceLevel,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

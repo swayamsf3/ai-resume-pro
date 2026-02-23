@@ -124,6 +124,7 @@ export type Database = {
       user_resumes: {
         Row: {
           created_at: string
+          experience_level: string
           id: string
           raw_data: Json | null
           resume_file_name: string | null
@@ -135,6 +136,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          experience_level?: string
           id?: string
           raw_data?: Json | null
           resume_file_name?: string | null
@@ -146,6 +148,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          experience_level?: string
           id?: string
           raw_data?: Json | null
           resume_file_name?: string | null
