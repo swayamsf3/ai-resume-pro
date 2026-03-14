@@ -34,7 +34,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "AI Resume Builder <onboarding@resend.dev>",
-        to: ["support.airesumebuilder@gmail.com"],
+        to: ["samsf32018@gmail.com"],
         subject: `[Contact Form] ${subject}`,
         reply_to: email,
         html: `
