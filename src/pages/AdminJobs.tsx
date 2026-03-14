@@ -28,12 +28,32 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deleteMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
+
+  const toggleJob = useCallback((id: string) => {
+    setSelectedJobs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelectedJobs((prev) => {
+      const activeFiltered = filteredJobs.filter((j) => j.is_active);
+      if (prev.size === activeFiltered.length && activeFiltered.every((j) => prev.has(j.id))) {
+        return new Set();
+      }
+      return new Set(activeFiltered.map((j) => j.id));
+    });
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user?.email !== ADMIN_EMAIL) {
