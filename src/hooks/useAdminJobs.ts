@@ -150,5 +150,23 @@ export const useAdminJobs = () => {
     },
   });
 
-  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation };
+  const bulkDeleteInactiveMutation = useMutation({
+    mutationFn: async () => {
+      const { error, count } = await supabase
+        .from("jobs")
+        .delete({ count: "exact" })
+        .eq("is_active", false);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    onSuccess: (count) => {
+      toast({ title: "Inactive jobs removed", description: `${count} inactive job(s) permanently deleted.` });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Deletion failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation, bulkDeleteInactiveMutation };
 };

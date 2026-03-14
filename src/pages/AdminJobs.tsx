@@ -28,7 +28,7 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation, bulkDeleteInactiveMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
@@ -100,28 +100,62 @@ const AdminJobs = () => {
           Admin — Job Ingestion
         </motion.h1>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-          {[
-            { label: "Total Jobs", value: stats.total, icon: Database },
-            { label: "Active", value: stats.active, icon: CheckCircle },
-            { label: "Inactive", value: stats.inactive, icon: XCircle },
-            { label: "Adzuna + Muse", value: stats.adzunaMuse, icon: Globe },
-            { label: "JSearch", value: stats.jsearch, icon: Search },
-            { label: "ATS (GH+Lever)", value: stats.ats, icon: Building2 },
-            { label: "Employer Feed", value: stats.feed, icon: Activity },
-            { label: "Manual", value: stats.manual, icon: Layers },
-          ].map((s) => (
-            <Card key={s.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
-                <s.icon className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-foreground">{s.value}</p>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Stats + Remove Inactive */}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            {[
+              { label: "Total Jobs", value: stats.total, icon: Database },
+              { label: "Active", value: stats.active, icon: CheckCircle },
+              { label: "Inactive", value: stats.inactive, icon: XCircle },
+              { label: "Adzuna + Muse", value: stats.adzunaMuse, icon: Globe },
+              { label: "JSearch", value: stats.jsearch, icon: Search },
+              { label: "ATS (GH+Lever)", value: stats.ats, icon: Building2 },
+              { label: "Employer Feed", value: stats.feed, icon: Activity },
+              { label: "Manual", value: stats.manual, icon: Layers },
+            ].map((s) => (
+              <Card key={s.label}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
+                  <s.icon className="w-4 h-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {stats.inactive > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="gap-2 w-fit"
+                  disabled={bulkDeleteInactiveMutation.isPending}
+                >
+                  {bulkDeleteInactiveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Remove All Inactive Jobs ({stats.inactive})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete all {stats.inactive} inactive jobs?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove all inactive jobs from the database. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => bulkDeleteInactiveMutation.mutate()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete All Inactive
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         {/* Ingestion Trigger */}
