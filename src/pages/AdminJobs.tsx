@@ -83,7 +83,7 @@ const AdminJobs = () => {
             { label: "ATS (GH+Lever)", value: stats.ats, icon: Building2 },
             { label: "Employer Feed", value: stats.feed, icon: Activity },
             { label: "Manual", value: stats.manual, icon: Layers },
-            { label: "Active / Inactive", value: `${stats.active} / ${stats.inactive}`, icon: Activity },
+            
           ].map((s) => (
             <Card key={s.label}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
