@@ -14,7 +14,7 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2 } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -32,6 +32,7 @@ const AdminJobs = () => {
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     if (!authLoading && user?.email !== ADMIN_EMAIL) {
@@ -53,12 +54,16 @@ const AdminJobs = () => {
   }, [jobsQuery.data]);
 
   const filteredJobs = useMemo(() => {
-    const jobs = jobsQuery.data ?? [];
-    if (sourceFilter === "all") return jobs;
-    if (sourceFilter === "real_api") return jobs.filter((j) => j.source === "adzuna" || j.source === "themuse" || j.source === "jsearch");
-    if (sourceFilter === "ats") return jobs.filter((j) => j.source.startsWith("greenhouse_") || j.source.startsWith("lever_"));
-    return jobs.filter((j) => j.source === sourceFilter);
-  }, [jobsQuery.data, sourceFilter]);
+    let jobs = jobsQuery.data ?? [];
+    // Source filter
+    if (sourceFilter === "real_api") jobs = jobs.filter((j) => j.source === "adzuna" || j.source === "themuse" || j.source === "jsearch");
+    else if (sourceFilter === "ats") jobs = jobs.filter((j) => j.source.startsWith("greenhouse_") || j.source.startsWith("lever_"));
+    else if (sourceFilter !== "all") jobs = jobs.filter((j) => j.source === sourceFilter);
+    // Status filter
+    if (statusFilter === "active") jobs = jobs.filter((j) => j.is_active);
+    else if (statusFilter === "inactive") jobs = jobs.filter((j) => !j.is_active);
+    return jobs;
+  }, [jobsQuery.data, sourceFilter, statusFilter]);
 
   if (authLoading || user?.email !== ADMIN_EMAIL) return null;
 
@@ -75,15 +80,16 @@ const AdminJobs = () => {
         </motion.h1>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           {[
             { label: "Total Jobs", value: stats.total, icon: Database },
+            { label: "Active", value: stats.active, icon: CheckCircle },
+            { label: "Inactive", value: stats.inactive, icon: XCircle },
             { label: "Adzuna + Muse", value: stats.adzunaMuse, icon: Globe },
             { label: "JSearch", value: stats.jsearch, icon: Search },
             { label: "ATS (GH+Lever)", value: stats.ats, icon: Building2 },
             { label: "Employer Feed", value: stats.feed, icon: Activity },
             { label: "Manual", value: stats.manual, icon: Layers },
-            
           ].map((s) => (
             <Card key={s.label}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -211,21 +217,33 @@ const AdminJobs = () => {
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-lg">Jobs</CardTitle>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                <SelectItem value="real_api">All APIs</SelectItem>
-                <SelectItem value="ats">ATS (GH + Lever)</SelectItem>
-                <SelectItem value="adzuna">Adzuna</SelectItem>
-                <SelectItem value="themuse">The Muse</SelectItem>
-                <SelectItem value="jsearch">JSearch</SelectItem>
-                <SelectItem value="employer_feed">Employer Feed</SelectItem>
-                <SelectItem value="manual">Manual</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="real_api">All APIs</SelectItem>
+                  <SelectItem value="ats">ATS (GH + Lever)</SelectItem>
+                  <SelectItem value="adzuna">Adzuna</SelectItem>
+                  <SelectItem value="themuse">The Muse</SelectItem>
+                  <SelectItem value="jsearch">JSearch</SelectItem>
+                  <SelectItem value="employer_feed">Employer Feed</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {jobsQuery.isLoading ? (
