@@ -80,15 +80,16 @@ const AdminJobs = () => {
         </motion.h1>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           {[
             { label: "Total Jobs", value: stats.total, icon: Database },
+            { label: "Active", value: stats.active, icon: CheckCircle },
+            { label: "Inactive", value: stats.inactive, icon: XCircle },
             { label: "Adzuna + Muse", value: stats.adzunaMuse, icon: Globe },
             { label: "JSearch", value: stats.jsearch, icon: Search },
             { label: "ATS (GH+Lever)", value: stats.ats, icon: Building2 },
             { label: "Employer Feed", value: stats.feed, icon: Activity },
             { label: "Manual", value: stats.manual, icon: Layers },
-            
           ].map((s) => (
             <Card key={s.label}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
