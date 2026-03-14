@@ -54,12 +54,16 @@ const AdminJobs = () => {
   }, [jobsQuery.data]);
 
   const filteredJobs = useMemo(() => {
-    const jobs = jobsQuery.data ?? [];
-    if (sourceFilter === "all") return jobs;
-    if (sourceFilter === "real_api") return jobs.filter((j) => j.source === "adzuna" || j.source === "themuse" || j.source === "jsearch");
-    if (sourceFilter === "ats") return jobs.filter((j) => j.source.startsWith("greenhouse_") || j.source.startsWith("lever_"));
-    return jobs.filter((j) => j.source === sourceFilter);
-  }, [jobsQuery.data, sourceFilter]);
+    let jobs = jobsQuery.data ?? [];
+    // Source filter
+    if (sourceFilter === "real_api") jobs = jobs.filter((j) => j.source === "adzuna" || j.source === "themuse" || j.source === "jsearch");
+    else if (sourceFilter === "ats") jobs = jobs.filter((j) => j.source.startsWith("greenhouse_") || j.source.startsWith("lever_"));
+    else if (sourceFilter !== "all") jobs = jobs.filter((j) => j.source === sourceFilter);
+    // Status filter
+    if (statusFilter === "active") jobs = jobs.filter((j) => j.is_active);
+    else if (statusFilter === "inactive") jobs = jobs.filter((j) => !j.is_active);
+    return jobs;
+  }, [jobsQuery.data, sourceFilter, statusFilter]);
 
   if (authLoading || user?.email !== ADMIN_EMAIL) return null;
 
