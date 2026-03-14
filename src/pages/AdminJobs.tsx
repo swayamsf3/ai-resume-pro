@@ -32,6 +32,7 @@ const AdminJobs = () => {
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     if (!authLoading && user?.email !== ADMIN_EMAIL) {
