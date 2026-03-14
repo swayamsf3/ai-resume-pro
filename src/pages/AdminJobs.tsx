@@ -325,8 +325,15 @@ const AdminJobs = () => {
                  </TableHeader>
                  <TableBody>
                    {filteredJobs.map((job) => (
-                     <TableRow key={job.id}>
-                       <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableRow key={job.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedJobs.has(job.id)}
+                            onCheckedChange={() => toggleJob(job.id)}
+                            disabled={!job.is_active}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{job.title}</TableCell>
                        <TableCell>{job.company}</TableCell>
                        <TableCell className="hidden md:table-cell">{job.location}</TableCell>
                         <TableCell>

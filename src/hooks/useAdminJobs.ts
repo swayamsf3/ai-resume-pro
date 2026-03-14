@@ -119,6 +119,23 @@ export const useAdminJobs = () => {
     },
   });
 
+  const deactivateMutation = useMutation({
+    mutationFn: async (jobIds: string[]) => {
+      const { error } = await supabase
+        .from("jobs")
+        .update({ is_active: false })
+        .in("id", jobIds);
+      if (error) throw error;
+    },
+    onSuccess: (_data, jobIds) => {
+      toast({ title: "Jobs deactivated", description: `${jobIds.length} job(s) marked as inactive.` });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Deactivation failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (jobId: string) => {
       const { error } = await supabase.from("jobs").delete().eq("id", jobId);
@@ -133,5 +150,5 @@ export const useAdminJobs = () => {
     },
   });
 
-  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deleteMutation };
+  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation };
 };
