@@ -43,18 +43,13 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Company */}
+          {/* Support */}
           <div>
-            <h4 className="font-display font-semibold text-foreground mb-4">
-            </h4>
+            <h4 className="font-display font-semibold text-foreground mb-4">Support</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                </Link>
-              </li>
-              <li>
                 <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-
+                  Contact Us
                 </Link>
               </li>
               <li>
