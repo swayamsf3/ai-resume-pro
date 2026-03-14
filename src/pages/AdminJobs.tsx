@@ -217,21 +217,33 @@ const AdminJobs = () => {
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-lg">Jobs</CardTitle>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                <SelectItem value="real_api">All APIs</SelectItem>
-                <SelectItem value="ats">ATS (GH + Lever)</SelectItem>
-                <SelectItem value="adzuna">Adzuna</SelectItem>
-                <SelectItem value="themuse">The Muse</SelectItem>
-                <SelectItem value="jsearch">JSearch</SelectItem>
-                <SelectItem value="employer_feed">Employer Feed</SelectItem>
-                <SelectItem value="manual">Manual</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  <SelectItem value="real_api">All APIs</SelectItem>
+                  <SelectItem value="ats">ATS (GH + Lever)</SelectItem>
+                  <SelectItem value="adzuna">Adzuna</SelectItem>
+                  <SelectItem value="themuse">The Muse</SelectItem>
+                  <SelectItem value="jsearch">JSearch</SelectItem>
+                  <SelectItem value="employer_feed">Employer Feed</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {jobsQuery.isLoading ? (
