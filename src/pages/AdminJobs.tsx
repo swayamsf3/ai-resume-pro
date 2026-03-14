@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminJobs } from "@/hooks/useAdminJobs";
@@ -8,13 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle, Ban } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,12 +28,23 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deleteMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
+
+  const toggleJob = useCallback((id: string) => {
+    setSelectedJobs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
 
   useEffect(() => {
     if (!authLoading && user?.email !== ADMIN_EMAIL) {
@@ -65,7 +77,16 @@ const AdminJobs = () => {
     return jobs;
   }, [jobsQuery.data, sourceFilter, statusFilter]);
 
-  if (authLoading || user?.email !== ADMIN_EMAIL) return null;
+  const toggleAll = useCallback(() => {
+    setSelectedJobs((prev) => {
+      const activeFiltered = filteredJobs.filter((j) => j.is_active);
+      if (prev.size === activeFiltered.length && activeFiltered.every((j) => prev.has(j.id))) {
+        return new Set();
+      }
+      return new Set(activeFiltered.map((j) => j.id));
+    });
+  }, [filteredJobs]);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,7 +237,39 @@ const AdminJobs = () => {
         {/* Jobs Table */}
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-lg">Jobs</CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-lg">Jobs</CardTitle>
+              {selectedJobs.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-2" disabled={deactivateMutation.isPending}>
+                      {deactivateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                      Deactivate ({selectedJobs.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Deactivate {selectedJobs.size} job(s)?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        These jobs will be marked as inactive and hidden from regular users. This can be reversed in the database.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          deactivateMutation.mutate(Array.from(selectedJobs));
+                          setSelectedJobs(new Set());
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Deactivate
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
             <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[140px]">
@@ -254,7 +307,13 @@ const AdminJobs = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
+                     <TableHead className="w-10">
+                       <Checkbox
+                         checked={filteredJobs.filter((j) => j.is_active).length > 0 && filteredJobs.filter((j) => j.is_active).every((j) => selectedJobs.has(j.id))}
+                         onCheckedChange={toggleAll}
+                       />
+                     </TableHead>
+                     <TableHead>Title</TableHead>
                     <TableHead>Company</TableHead>
                     <TableHead className="hidden md:table-cell">Location</TableHead>
                     <TableHead>Source</TableHead>
@@ -266,8 +325,15 @@ const AdminJobs = () => {
                  </TableHeader>
                  <TableBody>
                    {filteredJobs.map((job) => (
-                     <TableRow key={job.id}>
-                       <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableRow key={job.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedJobs.has(job.id)}
+                            onCheckedChange={() => toggleJob(job.id)}
+                            disabled={!job.is_active}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{job.title}</TableCell>
                        <TableCell>{job.company}</TableCell>
                        <TableCell className="hidden md:table-cell">{job.location}</TableCell>
                         <TableCell>
