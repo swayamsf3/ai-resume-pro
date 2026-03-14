@@ -237,7 +237,39 @@ const AdminJobs = () => {
         {/* Jobs Table */}
         <Card>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-lg">Jobs</CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-lg">Jobs</CardTitle>
+              {selectedJobs.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-2" disabled={deactivateMutation.isPending}>
+                      {deactivateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                      Deactivate ({selectedJobs.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Deactivate {selectedJobs.size} job(s)?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        These jobs will be marked as inactive and hidden from regular users. This can be reversed in the database.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          deactivateMutation.mutate(Array.from(selectedJobs));
+                          setSelectedJobs(new Set());
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Deactivate
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
             <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[140px]">
