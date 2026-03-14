@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail, Clock, MessageSquare, Send } from "lucide-react";
@@ -32,14 +33,28 @@ const Contact = () => {
 
   const onSubmit = async (data: ContactFormValues) => {
     setIsSubmitting(true);
-    // Simulate submission delay
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSubmitting(false);
-    form.reset();
-    toast({
-      title: "Message sent!",
-      description: "We'll get back to you as soon as possible.",
-    });
+    try {
+      const { data: result, error } = await supabase.functions.invoke("send-contact-email", {
+        body: data,
+      });
+
+      if (error) throw error;
+
+      form.reset();
+      toast({
+        title: "Message sent!",
+        description: "We'll get back to you as soon as possible.",
+      });
+    } catch (err) {
+      console.error("Contact form error:", err);
+      toast({
+        title: "Failed to send",
+        description: "Something went wrong. Please try again or email us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
