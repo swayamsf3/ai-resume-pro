@@ -72,7 +72,7 @@ const Footer = () => {
 
           </p>
           <p className="text-sm text-muted-foreground">
-               • Department of IT, HVPM COET
+               ​     
           </p>
         </div>
       </div>
