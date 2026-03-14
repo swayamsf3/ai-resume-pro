@@ -307,7 +307,13 @@ const AdminJobs = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
+                     <TableHead className="w-10">
+                       <Checkbox
+                         checked={filteredJobs.filter((j) => j.is_active).length > 0 && filteredJobs.filter((j) => j.is_active).every((j) => selectedJobs.has(j.id))}
+                         onCheckedChange={toggleAll}
+                       />
+                     </TableHead>
+                     <TableHead>Title</TableHead>
                     <TableHead>Company</TableHead>
                     <TableHead className="hidden md:table-cell">Location</TableHead>
                     <TableHead>Source</TableHead>
