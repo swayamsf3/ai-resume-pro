@@ -101,6 +101,7 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
       clone.style.boxSizing = 'border-box';
       clone.style.color = '#111';
       clone.style.background = '#ffffff';
+      clone.style.visibility = 'visible';
 
       tempContainer.appendChild(clone);
       document.body.appendChild(tempContainer);
