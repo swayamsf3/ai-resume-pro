@@ -45,15 +45,6 @@ const AdminJobs = () => {
     });
   }, []);
 
-  const toggleAll = useCallback(() => {
-    setSelectedJobs((prev) => {
-      const activeFiltered = filteredJobs.filter((j) => j.is_active);
-      if (prev.size === activeFiltered.length && activeFiltered.every((j) => prev.has(j.id))) {
-        return new Set();
-      }
-      return new Set(activeFiltered.map((j) => j.id));
-    });
-  }, []);
 
   useEffect(() => {
     if (!authLoading && user?.email !== ADMIN_EMAIL) {
