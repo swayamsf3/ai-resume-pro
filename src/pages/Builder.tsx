@@ -74,6 +74,7 @@ const initialResumeData: ResumeData = {
   skillCategories: [],
   projects: [],
   certifications: [],
+  sectionOrder: ["education", "experience", "skills", "projects", "certifications"],
 };
 
 const Builder = () => {
