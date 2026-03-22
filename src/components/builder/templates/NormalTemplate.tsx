@@ -6,20 +6,130 @@ interface TemplateProps {
 }
 
 const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
-  const { personalInfo, experience, education, skills, projects, certifications } = resumeData;
+  const { personalInfo, experience, education, projects, certifications, sectionOrder } = resumeData;
 
   const getBulletPoints = (description: string) => {
     if (!description) return [];
     return description.split(/[•\n]/).filter(s => s.trim().length > 0).slice(0, 5);
   };
 
+  const SectionTitle = ({ title }: { title: string }) => (
+    <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">{title}</h2>
+  );
+
+  const sections: Record<string, React.ReactNode> = {
+    education: education.length > 0 ? (
+      <section key="education" className="resume-section">
+        <SectionTitle title="Education" />
+        <div className="space-y-0.5">
+          {education.map((edu) => (
+            <div key={edu.id} className="resume-item text-[10px]">
+              <div className="flex justify-between">
+                <span className="font-semibold">{edu.degree}{edu.field && ` – ${edu.field}`}</span>
+                <span className="text-gray-600 whitespace-nowrap ml-2">
+                  {formatDate(edu.startDate)} – {formatDate(edu.endDate)}
+                </span>
+              </div>
+              <p className="text-gray-700">{edu.institution}{edu.gpa && ` | CGPA: ${edu.gpa}`}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null,
+
+    skills: resumeData.skillCategories && resumeData.skillCategories.length > 0 ? (
+      <section key="skills" className="resume-section">
+        <SectionTitle title="Skills" />
+        <div className="space-y-0.5">
+          {resumeData.skillCategories.map((cat) => (
+            <div key={cat.id} className="text-[10px] leading-snug">
+              <span className="font-bold">{cat.category}: </span>
+              <span>{cat.skills.join(", ")}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null,
+
+    experience: experience.length > 0 ? (
+      <section key="experience" className="resume-section-large">
+        <SectionTitle title="Experience" />
+        <div className="space-y-1.5">
+          {experience.map((exp) => (
+            <div key={exp.id} className="resume-item">
+              <div className="flex justify-between items-baseline">
+                <h3 className="font-semibold text-[10px]">{exp.position}</h3>
+                <span className="text-[9px] text-gray-600 whitespace-nowrap">
+                  {formatDate(exp.startDate)} – {exp.current ? "Present" : formatDate(exp.endDate)}
+                </span>
+              </div>
+              <p className="text-[9px] text-gray-700">{exp.company}</p>
+              {exp.description && (
+                <ul className="text-[9px] mt-0.5 leading-snug list-none">
+                  {getBulletPoints(exp.description).map((point, i) => (
+                    <li key={i} className="flex gap-1">
+                      <span>•</span>
+                      <span>{point.trim()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null,
+
+    projects: projects.length > 0 ? (
+      <section key="projects" className="resume-section-large">
+        <SectionTitle title="Projects" />
+        <div className="space-y-1.5">
+          {projects.map((proj) => (
+            <div key={proj.id} className="resume-item">
+              <h3 className="font-semibold text-[10px]">
+                {proj.name}
+                {proj.technologies && <span className="font-normal text-gray-600"> | {proj.technologies}</span>}
+              </h3>
+              {proj.description && (
+                <ul className="text-[9px] leading-snug list-none">
+                  {getBulletPoints(proj.description).map((point, i) => (
+                    <li key={i} className="flex gap-1">
+                      <span>•</span>
+                      <span>{point.trim()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {proj.link && <p className="text-[9px] text-gray-600">Link: {proj.link}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null,
+
+    certifications: certifications && certifications.length > 0 ? (
+      <section key="certifications" className="resume-section">
+        <SectionTitle title="Certifications" />
+        <div className="space-y-0.5">
+          {certifications.map((cert) => (
+            <div key={cert.id} className="resume-item flex justify-between text-[10px]">
+              <span>
+                <span className="mr-1">•</span>
+                {cert.name}{cert.issuer && ` – ${cert.issuer}`}
+              </span>
+              {cert.date && <span className="text-gray-600 whitespace-nowrap ml-2">{formatDate(cert.date)}</span>}
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null,
+  };
+
   return (
     <div className="space-y-2 text-black text-[10px]">
-      {/* Header - Name left, Contact right */}
+      {/* Header */}
       <header className="flex justify-between items-baseline border-b border-black pb-1">
-        <h1 className="text-lg font-bold">
-          {personalInfo.fullName || "Your Name"}
-        </h1>
+        <h1 className="text-lg font-bold">{personalInfo.fullName || "Your Name"}</h1>
         <div className="text-[10px] text-gray-700">
           {[personalInfo.phone, personalInfo.email].filter(Boolean).join("; ")}
         </div>
@@ -28,145 +138,13 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       {/* Summary */}
       {personalInfo.summary && (
         <section className="resume-section">
-          <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
-            Professional Summary
-          </h2>
-          <p className="text-[10px] leading-snug">
-            {personalInfo.summary}
-          </p>
+          <SectionTitle title="Professional Summary" />
+          <p className="text-[10px] leading-snug">{personalInfo.summary}</p>
         </section>
       )}
 
-      {/* Education */}
-      {education.length > 0 && (
-        <section className="resume-section">
-          <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
-            Education
-          </h2>
-          <div className="space-y-0.5">
-            {education.map((edu) => (
-              <div key={edu.id} className="resume-item text-[10px]">
-                <div className="flex justify-between">
-                  <span className="font-semibold">
-                    {edu.degree}{edu.field && ` – ${edu.field}`}
-                  </span>
-                  <span className="text-gray-600 whitespace-nowrap ml-2">
-                    {formatDate(edu.startDate)} – {formatDate(edu.endDate)}
-                  </span>
-                </div>
-                <p className="text-gray-700">
-                  {edu.institution}
-                  {edu.gpa && ` | CGPA: ${edu.gpa}`}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Skills */}
-      {resumeData.skillCategories && resumeData.skillCategories.length > 0 && (
-        <section className="resume-section">
-          <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
-            Skills
-          </h2>
-          <div className="space-y-0.5">
-            {resumeData.skillCategories.map((cat) => (
-              <div key={cat.id} className="text-[10px] leading-snug">
-                <span className="font-bold">{cat.category}: </span>
-                <span>{cat.skills.join(", ")}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Experience */}
-      {experience.length > 0 && (
-        <section className="resume-section-large">
-          <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
-            Experience
-          </h2>
-          <div className="space-y-1.5">
-            {experience.map((exp) => (
-              <div key={exp.id} className="resume-item">
-                <div className="flex justify-between items-baseline">
-                  <h3 className="font-semibold text-[10px]">{exp.position}</h3>
-                  <span className="text-[9px] text-gray-600 whitespace-nowrap">
-                    {formatDate(exp.startDate)} – {exp.current ? "Present" : formatDate(exp.endDate)}
-                  </span>
-                </div>
-                <p className="text-[9px] text-gray-700">{exp.company}</p>
-                {exp.description && (
-                  <ul className="text-[9px] mt-0.5 leading-snug list-none">
-                    {getBulletPoints(exp.description).map((point, i) => (
-                      <li key={i} className="flex gap-1">
-                        <span>•</span>
-                        <span>{point.trim()}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Projects */}
-      {projects.length > 0 && (
-        <section className="resume-section-large">
-          <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
-            Projects
-          </h2>
-          <div className="space-y-1.5">
-            {projects.map((proj) => (
-              <div key={proj.id} className="resume-item">
-                <h3 className="font-semibold text-[10px]">
-                  {proj.name}
-                  {proj.technologies && (
-                    <span className="font-normal text-gray-600"> | {proj.technologies}</span>
-                  )}
-                </h3>
-                {proj.description && (
-                  <ul className="text-[9px] leading-snug list-none">
-                    {getBulletPoints(proj.description).map((point, i) => (
-                      <li key={i} className="flex gap-1">
-                        <span>•</span>
-                        <span>{point.trim()}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {proj.link && (
-                  <p className="text-[9px] text-gray-600">Link: {proj.link}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Certifications */}
-      {certifications && certifications.length > 0 && (
-        <section className="resume-section">
-          <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
-            Certifications
-          </h2>
-          <div className="space-y-0.5">
-            {certifications.map((cert) => (
-              <div key={cert.id} className="resume-item flex justify-between text-[10px]">
-                <span>
-                  <span className="mr-1">•</span>
-                  {cert.name}
-                  {cert.issuer && ` – ${cert.issuer}`}
-                </span>
-                {cert.date && <span className="text-gray-600 whitespace-nowrap ml-2">{formatDate(cert.date)}</span>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Dynamic sections */}
+      {sectionOrder.map((key) => sections[key])}
     </div>
   );
 };
