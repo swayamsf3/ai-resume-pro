@@ -63,6 +63,7 @@ const initialResumeData: ResumeData = {
   experience: [],
   education: [],
   skills: [],
+  skillCategories: [],
   projects: [],
   certifications: [],
 };
