@@ -77,8 +77,25 @@ const AdminJobs = () => {
     // Status filter
     if (statusFilter === "active") jobs = jobs.filter((j) => j.is_active);
     else if (statusFilter === "inactive") jobs = jobs.filter((j) => !j.is_active);
-    return jobs;
+    // Deduplicate by id
+    const seen = new Set<string>();
+    return jobs.filter((j) => {
+      if (seen.has(j.id)) return false;
+      seen.add(j.id);
+      return true;
+    });
   }, [jobsQuery.data, sourceFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
+  const paginatedJobs = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredJobs.slice(start, start + PAGE_SIZE);
+  }, [filteredJobs, currentPage, PAGE_SIZE]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sourceFilter, statusFilter]);
 
   const toggleAll = useCallback(() => {
     setSelectedJobs((prev) => {
