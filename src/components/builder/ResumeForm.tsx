@@ -130,6 +130,7 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState("");
+  const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
 
   const handlePhoneChange = (value: string) => {
     const sanitized = value.replace(/[^\d+\s]/g, "");
