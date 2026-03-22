@@ -18,7 +18,8 @@ import {
   Wand2,
   X,
   Palette,
-  Award
+  Award,
+  GripVertical
 } from "lucide-react";
 import type { ResumeData } from "@/pages/Builder";
 import type { TemplateId } from "./templates/types";
