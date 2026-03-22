@@ -239,20 +239,53 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
     }));
   };
 
-  const addSkill = () => {
-    if (newSkill.trim() && !resumeData.skills.includes(newSkill.trim())) {
-      setResumeData((prev) => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()],
-      }));
-      setNewSkill("");
-    }
+  const addSkillCategory = (categoryName?: string) => {
+    const name = categoryName || newCategoryName.trim();
+    if (!name) return;
+    if (resumeData.skillCategories.some(c => c.category.toLowerCase() === name.toLowerCase())) return;
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: [...prev.skillCategories, { id: crypto.randomUUID(), category: name, skills: [] }],
+    }));
+    setNewCategoryName("");
   };
 
-  const removeSkill = (skill: string) => {
-    setResumeData((prev) => ({
+  const removeSkillCategory = (id: string) => {
+    setResumeData(prev => ({
       ...prev,
-      skills: prev.skills.filter((s) => s !== skill),
+      skillCategories: prev.skillCategories.filter(c => c.id !== id),
+    }));
+  };
+
+  const addSkillToCategory = (categoryId: string) => {
+    const skill = (newSkillByCategory[categoryId] || "").trim();
+    if (!skill) return;
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: prev.skillCategories.map(c =>
+        c.id === categoryId && !c.skills.includes(skill)
+          ? { ...c, skills: [...c.skills, skill] }
+          : c
+      ),
+    }));
+    setNewSkillByCategory(prev => ({ ...prev, [categoryId]: "" }));
+  };
+
+  const removeSkillFromCategory = (categoryId: string, skill: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: prev.skillCategories.map(c =>
+        c.id === categoryId ? { ...c, skills: c.skills.filter(s => s !== skill) } : c
+      ),
+    }));
+  };
+
+  const updateCategoryName = (categoryId: string, name: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: prev.skillCategories.map(c =>
+        c.id === categoryId ? { ...c, category: name } : c
+      ),
     }));
   };
 
