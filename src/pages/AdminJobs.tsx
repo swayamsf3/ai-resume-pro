@@ -15,7 +15,7 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle, Ban, ScanSearch } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle, Ban, ScanSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
