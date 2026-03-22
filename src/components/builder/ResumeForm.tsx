@@ -21,7 +21,7 @@ import {
   Award,
   GripVertical
 } from "lucide-react";
-import type { ResumeData } from "@/pages/Builder";
+import type { ResumeData, DEFAULT_SECTION_ORDER } from "@/pages/Builder";
 import type { TemplateId } from "./templates/types";
 import { templates } from "./templates/types";
 import { toast } from "@/hooks/use-toast";
