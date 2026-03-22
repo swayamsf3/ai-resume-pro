@@ -131,6 +131,15 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState("");
   const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+
+  const SECTION_LABELS: Record<string, string> = {
+    education: "Education",
+    experience: "Experience",
+    skills: "Skills",
+    projects: "Projects",
+    certifications: "Certifications",
+  };
 
   const handlePhoneChange = (value: string) => {
     const sanitized = value.replace(/[^\d+\s]/g, "");
