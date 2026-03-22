@@ -15,7 +15,7 @@ import {
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table";
-import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle, Ban, ScanSearch } from "lucide-react";
+import { Loader2, Play, Database, Activity, Layers, Globe, Search, Trash2, Building2, CheckCircle, XCircle, Ban, ScanSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -36,6 +36,8 @@ const AdminJobs = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
   const [scanMaxDays, setScanMaxDays] = useState(30);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   const toggleJob = useCallback((id: string) => {
     setSelectedJobs((prev) => {
@@ -75,8 +77,25 @@ const AdminJobs = () => {
     // Status filter
     if (statusFilter === "active") jobs = jobs.filter((j) => j.is_active);
     else if (statusFilter === "inactive") jobs = jobs.filter((j) => !j.is_active);
-    return jobs;
+    // Deduplicate by id
+    const seen = new Set<string>();
+    return jobs.filter((j) => {
+      if (seen.has(j.id)) return false;
+      seen.add(j.id);
+      return true;
+    });
   }, [jobsQuery.data, sourceFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
+  const paginatedJobs = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredJobs.slice(start, start + PAGE_SIZE);
+  }, [filteredJobs, currentPage, PAGE_SIZE]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sourceFilter, statusFilter]);
 
   const toggleAll = useCallback(() => {
     setSelectedJobs((prev) => {
@@ -393,6 +412,7 @@ const AdminJobs = () => {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -413,7 +433,7 @@ const AdminJobs = () => {
                    </TableRow>
                  </TableHeader>
                  <TableBody>
-                   {filteredJobs.map((job) => (
+                   {paginatedJobs.map((job) => (
                       <TableRow key={job.id}>
                         <TableCell>
                           <Checkbox
@@ -422,7 +442,7 @@ const AdminJobs = () => {
                             disabled={!job.is_active}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate">{job.title}</TableCell>
                        <TableCell>{job.company}</TableCell>
                        <TableCell className="hidden md:table-cell">{job.location}</TableCell>
                         <TableCell>
@@ -461,7 +481,7 @@ const AdminJobs = () => {
                              <AlertDialogHeader>
                                <AlertDialogTitle>Delete this job?</AlertDialogTitle>
                                <AlertDialogDescription>
-                                 This will permanently remove "{job.title}" at {job.company}. This action cannot be undone.
+                                 This will permanently remove &quot;{job.title}&quot; at {job.company}. This action cannot be undone.
                                </AlertDialogDescription>
                              </AlertDialogHeader>
                              <AlertDialogFooter>
@@ -480,6 +500,33 @@ const AdminJobs = () => {
                    ))}
                  </TableBody>
               </Table>
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-sm text-muted-foreground">
+                  {`Showing ${((currentPage - 1) * PAGE_SIZE) + 1}\u2013${Math.min(currentPage * PAGE_SIZE, filteredJobs.length)} of ${filteredJobs.length} jobs`}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              </>
             )}
           </CardContent>
         </Card>
