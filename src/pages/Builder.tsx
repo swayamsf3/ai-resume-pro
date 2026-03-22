@@ -53,7 +53,10 @@ export interface ResumeData {
     issuer: string;
     date: string;
   }>;
+  sectionOrder: string[];
 }
+
+export const DEFAULT_SECTION_ORDER = ["education", "experience", "skills", "projects", "certifications"];
 
 const initialResumeData: ResumeData = {
   personalInfo: {
