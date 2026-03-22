@@ -36,6 +36,8 @@ const AdminJobs = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
   const [scanMaxDays, setScanMaxDays] = useState(30);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   const toggleJob = useCallback((id: string) => {
     setSelectedJobs((prev) => {
