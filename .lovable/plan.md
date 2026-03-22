@@ -1,26 +1,61 @@
+# Plan: Categorized Skills Sections in Resume Builder
 
+## What Changes
 
-## Plan: Show "Email Confirmed" page instead of redirecting to dashboard
+Replace the flat `skills: string[]` with a categorized structure `skillCategories: Array<{ category: string; skills: string[] }>` so skills display in grouped sections like "Languages: Python, C++" and "Data Science: Pandas, NumPy, Matplotlib".
 
-### Problem
-When a user clicks the email verification link, `AuthCallback.tsx` exchanges the code for a session and immediately redirects to `/dashboard`. The user wants to see a confirmation message telling them their email is verified and to close the tab.
+## Data Model Change
 
-### Solution
+`**src/pages/Builder.tsx**` — Update `ResumeData` interface:
 
-**Modify `src/pages/AuthCallback.tsx`** to detect that the callback is for email verification (signup confirmation) and show a static "Email Confirmed" page instead of redirecting.
+```
+// Replace:  skills: string[]
+// With:
+skillCategories: Array<{
+  id: string;
+  category: string;   // e.g. "Languages", "Data Science", "Tools & Platforms"
+  skills: string[];
+}>;
+```
 
-Changes:
-1. After successfully exchanging the code for a session, check if this was a signup/email confirmation flow (the URL will have a `type` parameter or we can infer from context)
-2. Instead of always navigating to `/dashboard`, show a confirmation screen with:
-   - A green checkmark icon
-   - "Email Confirmed!" heading
-   - "Your email has been successfully verified. You can now close this tab and return to the app." message
-   - A "Go to Dashboard" button as a fallback option
-3. The page will NOT auto-redirect — the user stays on it until they close the tab or click the button
+Keep `skills: string[]` as well for backward compatibility with job matching features, computed as a flat list from all categories.
 
-### Technical Details
+## Form UI Change
 
-- The Supabase PKCE flow passes a `code` query param. We'll add a `confirmed` state that, when true, renders the confirmation UI instead of redirecting.
-- For non-verification callbacks (e.g., OAuth), continue redirecting to `/dashboard` as before. We can differentiate by checking for a `type` query parameter — Supabase typically includes `type=signup` for email confirmations.
-- Uses existing project UI components (Card, Button) and Lucide icons (CheckCircle) for consistency.
+`**src/components/builder/ResumeForm.tsx**` — Replace the Skills tab content:
 
+- Add a "Add Category" button that creates a new category with a name input and its own skill input
+- Each category shows: editable category name, skill badges with remove, and an "add skill" input
+- Categories can be reordered or deleted
+- Predefined category suggestions (Languages, Data Science, Tools & Platforms, etc.) shown as quick-add buttons
+
+## Template Changes (all 4 templates)
+
+Update **ClassicTemplate**, **ModernTemplate**, **ProfessionalTemplate**, **NormalTemplate** to render skills as:
+
+```
+SKILLS
+Languages: Python, C++
+Data Science: Pandas, NumPy, Matplotlib, Seaborn
+Tools & Platforms: GitHub, Jupyter Notebook, VS Code
+```
+
+Each category on its own line with bold category name followed by comma-separated skills.
+
+## Compatibility
+
+- `**src/hooks/useUserResume.ts**` and `**src/components/jobs/SkillsEditor.tsx**` — These use a flat `skills` array for job matching. The `ResumeData` will compute a flat `skills` getter from all categories, so job matching continues to work unchanged.
+- `**src/lib/skillExtractor.ts**` — No changes needed; it extracts flat skills which can be auto-categorized later.
+- **localStorage sync** in ResumeForm — Will flatten all category skills for the `builderSkills` key.
+
+## Files Modified
+
+1. `src/pages/Builder.tsx` — Add `skillCategories` to `ResumeData` and initial state
+2. `src/components/builder/ResumeForm.tsx` — New categorized skills UI in the Skills tab
+3. `src/components/builder/templates/ModernTemplate.tsx` — Render categorized skills
+4. `src/components/builder/templates/ClassicTemplate.tsx` — Render categorized skills
+5. `src/components/builder/templates/ProfessionalTemplate.tsx` — Render categorized skills
+6. `src/components/builder/templates/NormalTemplate.tsx` — Render categorized skills  
+  
+  
+person should be also able to add any specific catagory if he wants of its own
