@@ -154,10 +154,15 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
   // Persist skills to localStorage for job matching sync
   useEffect(() => {
-    if (resumeData.skills.length > 0) {
-      localStorage.setItem('builderSkills', JSON.stringify(resumeData.skills));
+    const allSkills = resumeData.skillCategories.flatMap(c => c.skills);
+    if (allSkills.length > 0) {
+      localStorage.setItem('builderSkills', JSON.stringify(allSkills));
     }
-  }, [resumeData.skills]);
+    // Also keep flat skills array in sync
+    if (JSON.stringify(resumeData.skills) !== JSON.stringify(allSkills)) {
+      setResumeData(prev => ({ ...prev, skills: allSkills }));
+    }
+  }, [resumeData.skillCategories]);
 
   const updatePersonalInfo = (field: keyof ResumeData["personalInfo"], value: string) => {
     setResumeData((prev) => ({
