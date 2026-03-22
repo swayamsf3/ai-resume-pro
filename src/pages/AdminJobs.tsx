@@ -412,6 +412,7 @@ const AdminJobs = () => {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -480,7 +481,7 @@ const AdminJobs = () => {
                              <AlertDialogHeader>
                                <AlertDialogTitle>Delete this job?</AlertDialogTitle>
                                <AlertDialogDescription>
-                                 This will permanently remove "{job.title}" at {job.company}. This action cannot be undone.
+                                 This will permanently remove &quot;{job.title}&quot; at {job.company}. This action cannot be undone.
                                </AlertDialogDescription>
                              </AlertDialogHeader>
                              <AlertDialogFooter>
@@ -499,11 +500,9 @@ const AdminJobs = () => {
                    ))}
                  </TableBody>
               </Table>
-
-              {/* Pagination */}
               <div className="flex items-center justify-between pt-4">
                 <p className="text-sm text-muted-foreground">
-                  {"Showing " + (((currentPage - 1) * PAGE_SIZE) + 1) + "–" + Math.min(currentPage * PAGE_SIZE, filteredJobs.length) + " of " + filteredJobs.length + " jobs"}
+                  {`Showing ${((currentPage - 1) * PAGE_SIZE) + 1}\u2013${Math.min(currentPage * PAGE_SIZE, filteredJobs.length)} of ${filteredJobs.length} jobs`}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
@@ -527,6 +526,7 @@ const AdminJobs = () => {
                   </Button>
                 </div>
               </div>
+              </>
             )}
           </CardContent>
         </Card>
