@@ -35,6 +35,11 @@ export interface ResumeData {
     gpa: string;
   }>;
   skills: string[];
+  skillCategories: Array<{
+    id: string;
+    category: string;
+    skills: string[];
+  }>;
   projects: Array<{
     id: string;
     name: string;
