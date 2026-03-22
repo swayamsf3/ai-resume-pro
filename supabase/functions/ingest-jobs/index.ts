@@ -444,10 +444,10 @@ async function upsertAndDeactivate(
   // Skip deactivation in daily mode to avoid wiping seeded jobs
   if (!deactivateStale) {
     console.log(`${label}: skipping stale-job deactivation (daily mode)`);
-    return { upserted: jobs.length, deactivated: 0 };
+    return { upserted: uniqueJobs.length, deactivated: 0 };
   }
 
-  const currentExternalIds = jobs.map((j) => j.external_id);
+  const currentExternalIds = uniqueJobs.map((j) => j.external_id);
 
   // Query stale jobs with pagination (Supabase 1000-row limit)
   const STALE_PAGE = 1000;
