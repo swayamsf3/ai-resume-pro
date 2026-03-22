@@ -420,10 +420,17 @@ async function upsertAndDeactivate(
 ): Promise<{ upserted: number; deactivated: number }> {
   if (jobs.length === 0) return { upserted: 0, deactivated: 0 };
 
+  // Deduplicate by external_id (keep last occurrence)
+  const seen = new Map<string, NormalizedJob>();
+  for (const job of jobs) {
+    seen.set(job.external_id, job);
+  }
+  const uniqueJobs = Array.from(seen.values());
+
   // Upsert in batches of 500 to avoid payload limits
   const BATCH_SIZE = 500;
-  for (let i = 0; i < jobs.length; i += BATCH_SIZE) {
-    const batch = jobs.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < uniqueJobs.length; i += BATCH_SIZE) {
+    const batch = uniqueJobs.slice(i, i + BATCH_SIZE);
     const { error: upsertError } = await supabase
       .from("jobs")
       .upsert(batch, { onConflict: "external_id" });
