@@ -28,13 +28,14 @@ const ADMIN_EMAIL = "swayamyawalkar54@gmail.com";
 const AdminJobs = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation, bulkDeleteInactiveMutation } = useAdminJobs();
+  const { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation, bulkDeleteInactiveMutation, scanOldJobsMutation } = useAdminJobs();
   const [secret, setSecret] = useState("");
   const [seedMode, setSeedMode] = useState(false);
   const [jsearchSeedMode, setJsearchSeedMode] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
+  const [scanMaxDays, setScanMaxDays] = useState(30);
 
   const toggleJob = useCallback((id: string) => {
     setSelectedJobs((prev) => {
