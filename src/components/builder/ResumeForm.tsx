@@ -729,33 +729,92 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
           {/* Skills */}
           <TabsContent value="skills" className="space-y-4">
+            {/* Suggested categories */}
+            <div className="space-y-2">
+              <Label>Quick Add Category</Label>
+              <div className="flex flex-wrap gap-2">
+                {["Languages", "Frameworks", "Data Science", "Tools & Platforms", "Databases", "Cloud", "Soft Skills"].map(cat => (
+                  <Badge
+                    key={cat}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-primary/10 transition-colors"
+                    onClick={() => addSkillCategory(cat)}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom category input */}
             <div className="flex gap-2">
               <Input
-                placeholder="Add a skill (e.g., JavaScript, React, Python)"
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
+                placeholder="Or type a custom category name..."
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkillCategory())}
               />
-              <Button onClick={addSkill} variant="default">
+              <Button onClick={() => addSkillCategory()} variant="default">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {resumeData.skills.map((skill) => (
-                <Badge
-                  key={skill}
-                  variant="secondary"
-                  className="px-3 py-1.5 text-sm cursor-pointer hover:bg-destructive/10 group"
-                  onClick={() => removeSkill(skill)}
-                >
-                  {skill}
-                  <X className="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100" />
-                </Badge>
-              ))}
-            </div>
-            {resumeData.skills.length === 0 && (
+
+            {/* Category cards */}
+            {resumeData.skillCategories.map((cat) => (
+              <Card key={cat.id} className="bg-muted/30 border-border">
+                <CardContent className="pt-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <Input
+                      value={cat.category}
+                      onChange={(e) => updateCategoryName(cat.id, e.target.value)}
+                      className="font-semibold text-sm h-8 w-auto max-w-[200px]"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeSkillCategory(cat.id)}
+                      className="h-8 w-8 text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      placeholder={`Add skill to ${cat.category}...`}
+                      value={newSkillByCategory[cat.id] || ""}
+                      onChange={(e) => setNewSkillByCategory(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkillToCategory(cat.id))}
+                    />
+                    <Button onClick={() => addSkillToCategory(cat.id)} variant="default" size="sm">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {cat.skills.map((skill) => (
+                      <Badge
+                        key={skill}
+                        variant="secondary"
+                        className="px-3 py-1.5 text-sm cursor-pointer hover:bg-destructive/10 group"
+                        onClick={() => removeSkillFromCategory(cat.id, skill)}
+                      >
+                        {skill}
+                        <X className="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100" />
+                      </Badge>
+                    ))}
+                  </div>
+                  {cat.skills.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      No skills added yet
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+
+            {resumeData.skillCategories.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Add your technical and soft skills to showcase your expertise
+                Add skill categories to organize your expertise (e.g., Languages, Tools, Frameworks)
               </p>
             )}
           </TabsContent>

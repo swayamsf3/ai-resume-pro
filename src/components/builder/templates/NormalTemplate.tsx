@@ -65,19 +65,19 @@ const NormalTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       )}
 
       {/* Skills */}
-      {skills.length > 0 && (
+      {resumeData.skillCategories && resumeData.skillCategories.length > 0 && (
         <section className="resume-section">
           <h2 className="font-bold uppercase text-[10px] border-b border-gray-400 pb-0.5 mb-1">
             Skills
           </h2>
-          <ul className="text-[10px] leading-snug list-none space-y-0.5">
-            {skills.map((skill, i) => (
-              <li key={i} className="flex gap-1">
-                <span>•</span>
-                <span>{skill}</span>
-              </li>
+          <div className="space-y-0.5">
+            {resumeData.skillCategories.map((cat) => (
+              <div key={cat.id} className="text-[10px] leading-snug">
+                <span className="font-bold">{cat.category}: </span>
+                <span>{cat.skills.join(", ")}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
 

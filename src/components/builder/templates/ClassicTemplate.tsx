@@ -103,14 +103,19 @@ const ClassicTemplate = ({ resumeData, formatDate }: TemplateProps) => {
       )}
 
       {/* Skills */}
-      {skills.length > 0 && (
+      {resumeData.skillCategories && resumeData.skillCategories.length > 0 && (
         <section className="resume-section">
           <h2 className="text-[10px] font-bold uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
             Skills
           </h2>
-          <p className="text-[10px] leading-snug">
-            {skills.join(" • ")}
-          </p>
+          <div className="space-y-0.5">
+            {resumeData.skillCategories.map((cat) => (
+              <div key={cat.id} className="text-[10px] leading-snug">
+                <span className="font-bold">{cat.category}: </span>
+                <span>{cat.skills.join(", ")}</span>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
