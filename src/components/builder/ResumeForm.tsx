@@ -124,6 +124,8 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const currentTemplate = templates.find(t => t.id === selectedTemplate);
   const [newSkill, setNewSkill] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newSkillByCategory, setNewSkillByCategory] = useState<Record<string, string>>({});
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState("");
