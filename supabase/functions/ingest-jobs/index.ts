@@ -420,10 +420,17 @@ async function upsertAndDeactivate(
 ): Promise<{ upserted: number; deactivated: number }> {
   if (jobs.length === 0) return { upserted: 0, deactivated: 0 };
 
+  // Deduplicate by external_id (keep last occurrence)
+  const seen = new Map<string, NormalizedJob>();
+  for (const job of jobs) {
+    seen.set(job.external_id, job);
+  }
+  const uniqueJobs = Array.from(seen.values());
+
   // Upsert in batches of 500 to avoid payload limits
   const BATCH_SIZE = 500;
-  for (let i = 0; i < jobs.length; i += BATCH_SIZE) {
-    const batch = jobs.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < uniqueJobs.length; i += BATCH_SIZE) {
+    const batch = uniqueJobs.slice(i, i + BATCH_SIZE);
     const { error: upsertError } = await supabase
       .from("jobs")
       .upsert(batch, { onConflict: "external_id" });
@@ -437,10 +444,10 @@ async function upsertAndDeactivate(
   // Skip deactivation in daily mode to avoid wiping seeded jobs
   if (!deactivateStale) {
     console.log(`${label}: skipping stale-job deactivation (daily mode)`);
-    return { upserted: jobs.length, deactivated: 0 };
+    return { upserted: uniqueJobs.length, deactivated: 0 };
   }
 
-  const currentExternalIds = jobs.map((j) => j.external_id);
+  const currentExternalIds = uniqueJobs.map((j) => j.external_id);
 
   // Query stale jobs with pagination (Supabase 1000-row limit)
   const STALE_PAGE = 1000;
