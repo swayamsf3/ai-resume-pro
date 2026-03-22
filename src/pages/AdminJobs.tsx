@@ -432,7 +432,7 @@ const AdminJobs = () => {
                    </TableRow>
                  </TableHeader>
                  <TableBody>
-                   {filteredJobs.map((job) => (
+                   {paginatedJobs.map((job) => (
                       <TableRow key={job.id}>
                         <TableCell>
                           <Checkbox
@@ -441,7 +441,7 @@ const AdminJobs = () => {
                             disabled={!job.is_active}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate">{job.title}</TableCell>
                        <TableCell>{job.company}</TableCell>
                        <TableCell className="hidden md:table-cell">{job.location}</TableCell>
                         <TableCell>
@@ -499,6 +499,34 @@ const AdminJobs = () => {
                    ))}
                  </TableBody>
               </Table>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, filteredJobs.length)} of {filteredJobs.length} jobs
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
