@@ -206,6 +206,7 @@ const ResumePreview = ({ resumeData, templateId }: ResumePreviewProps) => {
     personalInfo.email ||
     experience.length > 0 ||
     education.length > 0 ||
+    resumeData.skillCategories.length > 0 ||
     skills.length > 0 ||
     projects.length > 0;
 

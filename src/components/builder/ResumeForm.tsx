@@ -124,6 +124,8 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const currentTemplate = templates.find(t => t.id === selectedTemplate);
   const [newSkill, setNewSkill] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newSkillByCategory, setNewSkillByCategory] = useState<Record<string, string>>({});
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [generatingProjectId, setGeneratingProjectId] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState("");
@@ -154,10 +156,15 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
   // Persist skills to localStorage for job matching sync
   useEffect(() => {
-    if (resumeData.skills.length > 0) {
-      localStorage.setItem('builderSkills', JSON.stringify(resumeData.skills));
+    const allSkills = resumeData.skillCategories.flatMap(c => c.skills);
+    if (allSkills.length > 0) {
+      localStorage.setItem('builderSkills', JSON.stringify(allSkills));
     }
-  }, [resumeData.skills]);
+    // Also keep flat skills array in sync
+    if (JSON.stringify(resumeData.skills) !== JSON.stringify(allSkills)) {
+      setResumeData(prev => ({ ...prev, skills: allSkills }));
+    }
+  }, [resumeData.skillCategories]);
 
   const updatePersonalInfo = (field: keyof ResumeData["personalInfo"], value: string) => {
     setResumeData((prev) => ({
@@ -234,20 +241,53 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
     }));
   };
 
-  const addSkill = () => {
-    if (newSkill.trim() && !resumeData.skills.includes(newSkill.trim())) {
-      setResumeData((prev) => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()],
-      }));
-      setNewSkill("");
-    }
+  const addSkillCategory = (categoryName?: string) => {
+    const name = categoryName || newCategoryName.trim();
+    if (!name) return;
+    if (resumeData.skillCategories.some(c => c.category.toLowerCase() === name.toLowerCase())) return;
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: [...prev.skillCategories, { id: crypto.randomUUID(), category: name, skills: [] }],
+    }));
+    setNewCategoryName("");
   };
 
-  const removeSkill = (skill: string) => {
-    setResumeData((prev) => ({
+  const removeSkillCategory = (id: string) => {
+    setResumeData(prev => ({
       ...prev,
-      skills: prev.skills.filter((s) => s !== skill),
+      skillCategories: prev.skillCategories.filter(c => c.id !== id),
+    }));
+  };
+
+  const addSkillToCategory = (categoryId: string) => {
+    const skill = (newSkillByCategory[categoryId] || "").trim();
+    if (!skill) return;
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: prev.skillCategories.map(c =>
+        c.id === categoryId && !c.skills.includes(skill)
+          ? { ...c, skills: [...c.skills, skill] }
+          : c
+      ),
+    }));
+    setNewSkillByCategory(prev => ({ ...prev, [categoryId]: "" }));
+  };
+
+  const removeSkillFromCategory = (categoryId: string, skill: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: prev.skillCategories.map(c =>
+        c.id === categoryId ? { ...c, skills: c.skills.filter(s => s !== skill) } : c
+      ),
+    }));
+  };
+
+  const updateCategoryName = (categoryId: string, name: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      skillCategories: prev.skillCategories.map(c =>
+        c.id === categoryId ? { ...c, category: name } : c
+      ),
     }));
   };
 
@@ -691,33 +731,92 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
           {/* Skills */}
           <TabsContent value="skills" className="space-y-4">
+            {/* Suggested categories */}
+            <div className="space-y-2">
+              <Label>Quick Add Category</Label>
+              <div className="flex flex-wrap gap-2">
+                {["Languages", "Frameworks", "Data Science", "Tools & Platforms", "Databases", "Cloud", "Soft Skills"].map(cat => (
+                  <Badge
+                    key={cat}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-primary/10 transition-colors"
+                    onClick={() => addSkillCategory(cat)}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom category input */}
             <div className="flex gap-2">
               <Input
-                placeholder="Add a skill (e.g., JavaScript, React, Python)"
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
+                placeholder="Or type a custom category name..."
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkillCategory())}
               />
-              <Button onClick={addSkill} variant="default">
+              <Button onClick={() => addSkillCategory()} variant="default">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {resumeData.skills.map((skill) => (
-                <Badge
-                  key={skill}
-                  variant="secondary"
-                  className="px-3 py-1.5 text-sm cursor-pointer hover:bg-destructive/10 group"
-                  onClick={() => removeSkill(skill)}
-                >
-                  {skill}
-                  <X className="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100" />
-                </Badge>
-              ))}
-            </div>
-            {resumeData.skills.length === 0 && (
+
+            {/* Category cards */}
+            {resumeData.skillCategories.map((cat) => (
+              <Card key={cat.id} className="bg-muted/30 border-border">
+                <CardContent className="pt-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <Input
+                      value={cat.category}
+                      onChange={(e) => updateCategoryName(cat.id, e.target.value)}
+                      className="font-semibold text-sm h-8 w-auto max-w-[200px]"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeSkillCategory(cat.id)}
+                      className="h-8 w-8 text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      placeholder={`Add skill to ${cat.category}...`}
+                      value={newSkillByCategory[cat.id] || ""}
+                      onChange={(e) => setNewSkillByCategory(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkillToCategory(cat.id))}
+                    />
+                    <Button onClick={() => addSkillToCategory(cat.id)} variant="default" size="sm">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {cat.skills.map((skill) => (
+                      <Badge
+                        key={skill}
+                        variant="secondary"
+                        className="px-3 py-1.5 text-sm cursor-pointer hover:bg-destructive/10 group"
+                        onClick={() => removeSkillFromCategory(cat.id, skill)}
+                      >
+                        {skill}
+                        <X className="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100" />
+                      </Badge>
+                    ))}
+                  </div>
+                  {cat.skills.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      No skills added yet
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+
+            {resumeData.skillCategories.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Add your technical and soft skills to showcase your expertise
+                Add skill categories to organize your expertise (e.g., Languages, Tools, Frameworks)
               </p>
             )}
           </TabsContent>
