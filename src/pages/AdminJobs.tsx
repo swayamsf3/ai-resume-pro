@@ -156,7 +156,61 @@ const AdminJobs = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
+        )}
+
+        {/* Scan Old Jobs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ScanSearch className="w-5 h-5" />
+              Scan & Deactivate Old Jobs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Deactivate all active jobs posted more than X days ago. Use Seed Mode ingestion to also re-check sources and deactivate jobs no longer found.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={scanMaxDays}
+                  onChange={(e) => setScanMaxDays(Number(e.target.value) || 30)}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground whitespace-nowrap">days old</span>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    className="gap-2"
+                    disabled={scanOldJobsMutation.isPending}
+                  >
+                    {scanOldJobsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanSearch className="w-4 h-4" />}
+                    Scan Jobs
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Deactivate jobs older than {scanMaxDays} days?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      All active jobs posted more than {scanMaxDays} days ago will be marked as inactive. They can still be deleted later.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => scanOldJobsMutation.mutate(scanMaxDays)}>
+                      Scan & Deactivate
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
         </div>
 
         {/* Ingestion Trigger */}
