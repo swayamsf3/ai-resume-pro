@@ -475,6 +475,44 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
         </div>
       </CardHeader>
       <CardContent>
+        {/* Section Order */}
+        <div className="mb-6 p-3 rounded-lg bg-muted/30 border border-border">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Section Order (drag to reorder)</p>
+          <div className="flex flex-wrap gap-2">
+            {resumeData.sectionOrder.map((sectionKey) => (
+              <div
+                key={sectionKey}
+                draggable
+                onDragStart={() => setDraggedSectionId(sectionKey)}
+                onDragEnd={() => setDraggedSectionId(null)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!draggedSectionId || draggedSectionId === sectionKey) return;
+                  setResumeData(prev => {
+                    const order = [...prev.sectionOrder];
+                    const fromIdx = order.indexOf(draggedSectionId);
+                    const toIdx = order.indexOf(sectionKey);
+                    if (fromIdx === -1 || toIdx === -1) return prev;
+                    const [moved] = order.splice(fromIdx, 1);
+                    order.splice(toIdx, 0, moved);
+                    return { ...prev, sectionOrder: order };
+                  });
+                  setDraggedSectionId(null);
+                }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium cursor-grab active:cursor-grabbing border transition-opacity ${
+                  draggedSectionId === sectionKey ? "opacity-50" : ""
+                } bg-background border-border text-foreground hover:bg-accent`}
+              >
+                <GripVertical className="w-3 h-3 text-muted-foreground" />
+                {SECTION_LABELS[sectionKey] || sectionKey}
+              </div>
+            ))}
+          </div>
+        </div>
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="grid grid-cols-6 mb-6">
             <TabsTrigger value="personal" className="gap-1 text-xs sm:text-sm">
