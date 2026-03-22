@@ -766,14 +766,41 @@ const ResumeForm = ({ resumeData, setResumeData, selectedTemplate, onChangeTempl
 
             {/* Category cards */}
             {resumeData.skillCategories.map((cat) => (
-              <Card key={cat.id} className="bg-muted/30 border-border">
+              <Card
+                key={cat.id}
+                className={`bg-muted/30 border-border transition-opacity ${draggedCategoryId === cat.id ? "opacity-50" : ""}`}
+                draggable
+                onDragStart={() => setDraggedCategoryId(cat.id)}
+                onDragEnd={() => setDraggedCategoryId(null)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!draggedCategoryId || draggedCategoryId === cat.id) return;
+                  setResumeData(prev => {
+                    const cats = [...prev.skillCategories];
+                    const fromIdx = cats.findIndex(c => c.id === draggedCategoryId);
+                    const toIdx = cats.findIndex(c => c.id === cat.id);
+                    if (fromIdx === -1 || toIdx === -1) return prev;
+                    const [moved] = cats.splice(fromIdx, 1);
+                    cats.splice(toIdx, 0, moved);
+                    return { ...prev, skillCategories: cats };
+                  });
+                  setDraggedCategoryId(null);
+                }}
+              >
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-start mb-3">
-                    <Input
-                      value={cat.category}
-                      onChange={(e) => updateCategoryName(cat.id, e.target.value)}
-                      className="font-semibold text-sm h-8 w-auto max-w-[200px]"
-                    />
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                      <Input
+                        value={cat.category}
+                        onChange={(e) => updateCategoryName(cat.id, e.target.value)}
+                        className="font-semibold text-sm h-8 w-auto max-w-[200px]"
+                      />
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
