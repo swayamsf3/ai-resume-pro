@@ -168,5 +168,52 @@ export const useAdminJobs = () => {
     },
   });
 
-  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation, bulkDeleteInactiveMutation };
+  const scanOldJobsMutation = useMutation({
+    mutationFn: async (maxAgeDays: number) => {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
+      const cutoffISO = cutoffDate.toISOString();
+
+      // Find active jobs older than cutoff
+      const PAGE_SIZE = 1000;
+      let allOldJobIds: string[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("jobs")
+          .select("id")
+          .eq("is_active", true)
+          .lt("posted_at", cutoffISO)
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        allOldJobIds = allOldJobIds.concat((data || []).map((j) => j.id));
+        if (!data || data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+
+      if (allOldJobIds.length === 0) return 0;
+
+      // Deactivate in batches
+      const BATCH = 500;
+      for (let i = 0; i < allOldJobIds.length; i += BATCH) {
+        const batch = allOldJobIds.slice(i, i + BATCH);
+        const { error } = await supabase
+          .from("jobs")
+          .update({ is_active: false })
+          .in("id", batch);
+        if (error) throw error;
+      }
+
+      return allOldJobIds.length;
+    },
+    onSuccess: (count) => {
+      toast({ title: "Scan complete", description: count > 0 ? `${count} old job(s) marked as inactive.` : "No old jobs found — everything looks fresh!" });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Scan failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { jobsQuery, ingestMutation, jsearchMutation, atsMutation, deactivateMutation, deleteMutation, bulkDeleteInactiveMutation, scanOldJobsMutation };
 };
