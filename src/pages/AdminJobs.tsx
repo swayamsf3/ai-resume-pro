@@ -503,7 +503,7 @@ const AdminJobs = () => {
               {/* Pagination */}
               <div className="flex items-center justify-between pt-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, filteredJobs.length)} of {filteredJobs.length} jobs
+                  {"Showing " + (((currentPage - 1) * PAGE_SIZE) + 1) + "–" + Math.min(currentPage * PAGE_SIZE, filteredJobs.length) + " of " + filteredJobs.length + " jobs"}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
