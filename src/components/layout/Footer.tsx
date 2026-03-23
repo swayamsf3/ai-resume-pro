@@ -37,7 +37,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link to="/templates" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Templates
+                  ​
                 </Link>
               </li>
             </ul>
