@@ -23,10 +23,10 @@ An intelligent resume builder and job matching platform that helps job seekers c
 
 ```sh
 # Clone the repository
-git clone <YOUR_GIT_URL>
+git clone https://github.com/your-username/ai-resume-builder.git
 
 # Navigate to the project directory
-cd ai-resume-pro
+cd ai-resume-builder
 
 # Install dependencies
 npm install
